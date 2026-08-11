@@ -7,7 +7,7 @@ import kotlin.test.assertNotSame
 class AppGraphTest {
 
     @Test
-    fun montaOGrafoAPartirDaEngineDePlataforma() {
+    fun buildsGraphFromPlatformEngine() {
         val graph = AppGraph(FakeGreetingEngine())
 
         assertNotSame(graph.welcome.viewModel(), graph.welcome.viewModel())

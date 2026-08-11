@@ -18,7 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-// `viewModelScope` roda em Dispatchers.Main, que não existe fora de um device.
+// `viewModelScope` runs on Dispatchers.Main, absent outside a device.
 @OptIn(ExperimentalCoroutinesApi::class)
 class WelcomeViewModelTest {
 
@@ -35,22 +35,22 @@ class WelcomeViewModelTest {
     }
 
     @Test
-    fun comecaEmLoading() {
+    fun startsInLoadingState() {
         assertEquals(WelcomeUiState.Loading, viewModel().state.value)
     }
 
     @Test
-    fun loadEmiteContentComAMensagemDoUseCase() = runTest(dispatcher) {
-        val viewModel = viewModel(Outcome.Success(WelcomeMessage("bem-vindo")))
+    fun loadEmitsContentWithMessageFromUseCase() = runTest(dispatcher) {
+        val viewModel = viewModel(Outcome.Success(WelcomeMessage("welcome")))
 
         viewModel.load()
         advanceUntilIdle()
 
-        assertEquals(WelcomeUiState.Content("bem-vindo"), viewModel.state.value)
+        assertEquals(WelcomeUiState.Content("welcome"), viewModel.state.value)
     }
 
     @Test
-    fun falhaDeConectividadeOfereceTentarDeNovo() = runTest(dispatcher) {
+    fun connectivityFailureOffersRetry() = runTest(dispatcher) {
         val viewModel = viewModel(Outcome.Failure(AppError.Connectivity))
 
         viewModel.load()
@@ -61,8 +61,8 @@ class WelcomeViewModelTest {
     }
 
     @Test
-    fun falhaDePlataformaNaoOfereceTentarDeNovo() = runTest(dispatcher) {
-        val viewModel = viewModel(Outcome.Failure(AppError.Platform("sem bluetooth")))
+    fun platformFailureDoesNotOfferRetry() = runTest(dispatcher) {
+        val viewModel = viewModel(Outcome.Failure(AppError.Platform("no bluetooth")))
 
         viewModel.load()
         advanceUntilIdle()
@@ -72,7 +72,7 @@ class WelcomeViewModelTest {
     }
 
     @Test
-    fun cadaErroDeDominioTemUmaMensagemDeUiPropria() = runTest(dispatcher) {
+    fun eachDomainErrorHasItsOwnUiMessage() = runTest(dispatcher) {
         val errors = listOf(
             AppError.Connectivity,
             AppError.NotFound,
@@ -88,11 +88,11 @@ class WelcomeViewModelTest {
             (viewModel.state.value as WelcomeUiState.Error).message
         }
 
-        assertEquals(messages.size, messages.distinct().size, "mensagens repetidas: $messages")
+        assertEquals(messages.size, messages.distinct().size, "duplicate messages: $messages")
     }
 
     private fun viewModel(
-        outcome: Outcome<WelcomeMessage> = Outcome.Success(WelcomeMessage("olá")),
+        outcome: Outcome<WelcomeMessage> = Outcome.Success(WelcomeMessage("hello")),
     ): WelcomeViewModel =
         WelcomeViewModel(GetWelcomeMessageUseCase(FakeMessageRepository(outcome)))
 }

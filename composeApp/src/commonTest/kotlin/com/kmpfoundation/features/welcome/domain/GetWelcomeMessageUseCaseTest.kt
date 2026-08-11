@@ -10,17 +10,17 @@ import kotlin.test.assertEquals
 class GetWelcomeMessageUseCaseTest {
 
     @Test
-    fun devolveAMensagemDoRepositorio() = runTest {
-        val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("mensagem do fake")))
+    fun returnsMessageFromRepository() = runTest {
+        val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("message from fake")))
 
         val result = GetWelcomeMessageUseCase(repository)()
 
-        assertEquals(Outcome.Success(WelcomeMessage("mensagem do fake")), result)
+        assertEquals(Outcome.Success(WelcomeMessage("message from fake")), result)
         assertEquals(1, repository.callCount)
     }
 
     @Test
-    fun propagaAFalhaSemTraduzir() = runTest {
+    fun propagatesFailureWithoutTranslating() = runTest {
         val repository = FakeMessageRepository.failing(AppError.Connectivity)
 
         val result = GetWelcomeMessageUseCase(repository)()

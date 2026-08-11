@@ -11,6 +11,16 @@
 - Exceções pontuais usam `@Suppress` **com justificativa no código**; exceções
   recorrentes viram regra no `detekt.yml` via PR.
 
+## Idioma
+
+- **Código em inglês**, sem exceção: nomes de classe, função, variável,
+  **nomes de teste** e dados de teste. Base de código mista envelhece mal e
+  produz híbridos como `devolveAMensagemDoRepositorio`.
+- **Prosa em português**: comentários, `docs/`, mensagens de commit e de PR.
+  O time é o leitor, e a precisão vale mais que a uniformidade aqui.
+- **Textos de UI em português** — são conteúdo de produto, não código (quando
+  houver i18n, viram chaves em inglês apontando para traduções).
+
 ## Comentários
 
 Comentário existe para dizer **o que o código não consegue mostrar** — uma

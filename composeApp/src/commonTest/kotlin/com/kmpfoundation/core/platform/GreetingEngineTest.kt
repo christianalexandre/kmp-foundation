@@ -13,29 +13,29 @@ import kotlin.test.assertEquals
 class GreetingEngineTest {
 
     @Test
-    fun adapterDevolveSucessoQuandoAEngineResponde() = runTest {
-        val engine = FakeGreetingEngine(greeting = "olá do fake")
+    fun adapterReturnsSuccessWhenEngineResponds() = runTest {
+        val engine = FakeGreetingEngine(greeting = "hello from fake")
 
-        val result = engine.greet("mundo")
+        val result = engine.greet("world")
 
-        assertEquals(Outcome.Success("olá do fake"), result)
-        assertEquals("mundo", engine.lastName)
+        assertEquals(Outcome.Success("hello from fake"), result)
+        assertEquals("world", engine.lastName)
     }
 
     @Test
-    fun adapterConverteMensagemDeErroEmAppError() = runTest {
-        val engine = FakeGreetingEngine(greeting = null, errorMessage = "bluetooth desligado")
+    fun adapterConvertsErrorMessageIntoAppError() = runTest {
+        val engine = FakeGreetingEngine(greeting = null, errorMessage = "bluetooth is off")
 
-        val result = engine.greet("mundo")
+        val result = engine.greet("world")
 
-        assertEquals(Outcome.Failure(AppError.Platform("bluetooth desligado")), result)
+        assertEquals(Outcome.Failure(AppError.Platform("bluetooth is off")), result)
     }
 
     @Test
-    fun engineIndisponivelFalhaSemChamarAPlataforma() = runTest {
+    fun unavailableEngineFailsWithoutCallingPlatform() = runTest {
         val engine = FakeGreetingEngine(isAvailable = false)
 
-        val result = engine.greet("mundo")
+        val result = engine.greet("world")
 
         assertEquals(
             Outcome.Failure(AppError.Platform("engine indisponível nesta plataforma")),
@@ -45,10 +45,10 @@ class GreetingEngineTest {
     }
 
     @Test
-    fun cancelarACoroutineCancelaAEngineNativa() = runTest {
+    fun cancellingCoroutineCancelsNativeEngine() = runTest {
         val engine = FakeGreetingEngine(respondImmediately = false)
 
-        val job = launch { engine.greet("mundo") }
+        val job = launch { engine.greet("world") }
         advanceUntilIdle()
         job.cancel()
         advanceUntilIdle()

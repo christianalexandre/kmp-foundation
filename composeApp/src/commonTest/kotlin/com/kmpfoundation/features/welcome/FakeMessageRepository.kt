@@ -6,7 +6,7 @@ import com.kmpfoundation.features.welcome.domain.MessageRepository
 import com.kmpfoundation.features.welcome.domain.WelcomeMessage
 
 class FakeMessageRepository(
-    private val outcome: Outcome<WelcomeMessage> = Outcome.Success(WelcomeMessage("olá dos testes")),
+    private val outcome: Outcome<WelcomeMessage> = Outcome.Success(WelcomeMessage("hello from tests")),
 ) : MessageRepository {
     var callCount = 0
         private set

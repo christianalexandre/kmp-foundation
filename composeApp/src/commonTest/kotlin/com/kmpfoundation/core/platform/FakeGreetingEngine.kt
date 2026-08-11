@@ -1,12 +1,12 @@
 package com.kmpfoundation.core.platform
 
 /**
- * Fake da engine nativa: é o que permite testar em `commonTest` toda a lógica
- * que depende de plataforma, sem device e sem simulador.
+ * Fake of the native engine: lets `commonTest` cover every platform-dependent
+ * path without a device or a simulator.
  */
 class FakeGreetingEngine(
     override val isAvailable: Boolean = true,
-    private val greeting: String? = "olá do fake",
+    private val greeting: String? = "hello from fake",
     private val errorMessage: String? = null,
     private val respondImmediately: Boolean = true,
 ) : GreetingEngine {

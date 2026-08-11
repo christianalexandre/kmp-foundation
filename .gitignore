@@ -19,3 +19,6 @@ iosApp/iosApp.xcodeproj/project.xcworkspace/xcuserdata/
 iosApp/DerivedData/
 *.hmap
 *.ipa
+
+# Gerado pelo XcodeGen (make gen) — não versionar.
+iosApp/iosApp.xcodeproj/

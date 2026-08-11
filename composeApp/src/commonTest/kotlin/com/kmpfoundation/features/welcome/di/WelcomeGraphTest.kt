@@ -34,31 +34,31 @@ class WelcomeGraphTest {
     }
 
     @Test
-    fun montaOViewModelComAsDependenciasRecebidas() = runTest(dispatcher) {
-        val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("olá dos testes")))
+    fun buildsViewModelWithProvidedDependencies() = runTest(dispatcher) {
+        val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("hello from tests")))
         val graph = WelcomeGraph(messageRepository = repository)
 
         val viewModel = graph.viewModel()
         viewModel.load()
         advanceUntilIdle()
 
-        assertEquals(WelcomeUiState.Content("olá dos testes"), viewModel.state.value)
+        assertEquals(WelcomeUiState.Content("hello from tests"), viewModel.state.value)
         assertEquals(1, repository.callCount)
     }
 
     @Test
-    fun montaAPartirDaEngineDePlataforma() = runTest(dispatcher) {
-        val graph = WelcomeGraph(FakeGreetingEngine(greeting = "olá do fake"))
+    fun buildsFromPlatformEngine() = runTest(dispatcher) {
+        val graph = WelcomeGraph(FakeGreetingEngine(greeting = "hello from fake"))
 
         val viewModel = graph.viewModel()
         viewModel.load()
         advanceUntilIdle()
 
-        assertEquals(WelcomeUiState.Content("olá do fake"), viewModel.state.value)
+        assertEquals(WelcomeUiState.Content("hello from fake"), viewModel.state.value)
     }
 
     @Test
-    fun viewModelEhFactory() {
+    fun viewModelIsAFactory() {
         val graph = WelcomeGraph(FakeGreetingEngine())
 
         assertNotSame(graph.viewModel(), graph.viewModel())

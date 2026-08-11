@@ -11,20 +11,20 @@ import kotlin.test.assertEquals
 class PlatformMessageRepositoryTest {
 
     @Test
-    fun embrulhaARespostaDaEngineNaEntidadeDeDominio() = runTest {
-        val engine = FakeGreetingEngine(greeting = "Olá, kmp-foundation")
+    fun wrapsEngineResponseInDomainEntity() = runTest {
+        val engine = FakeGreetingEngine(greeting = "Hello, kmp-foundation")
 
         val result = PlatformMessageRepository(engine).welcomeMessage()
 
-        assertEquals(Outcome.Success(WelcomeMessage("Olá, kmp-foundation")), result)
+        assertEquals(Outcome.Success(WelcomeMessage("Hello, kmp-foundation")), result)
     }
 
     @Test
-    fun propagaFalhaDaPlataforma() = runTest {
-        val engine = FakeGreetingEngine(greeting = null, errorMessage = "sem permissão")
+    fun propagatesPlatformFailure() = runTest {
+        val engine = FakeGreetingEngine(greeting = null, errorMessage = "permission denied")
 
         val result = PlatformMessageRepository(engine).welcomeMessage()
 
-        assertEquals(Outcome.Failure(AppError.Platform("sem permissão")), result)
+        assertEquals(Outcome.Failure(AppError.Platform("permission denied")), result)
     }
 }
