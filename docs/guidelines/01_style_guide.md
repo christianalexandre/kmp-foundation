@@ -33,6 +33,11 @@
 
 - Feature **não** importa de outra feature; só de `core/`. Composição entre
   features acontece no `AppGraph` e na navegação.
+- **Só `di/` (o topo) conhece features — `core/` nunca.** `core/` é
+  infraestrutura consumida pelas features; inverter isso cria ciclo quando as
+  features virarem módulos.
+- Cada feature monta a si mesma em `features/<nome>/di/<Nome>Graph.kt`.
+  **ViewModel é factory, nunca instância guardada no grafo** (ADR 0001).
 - `domain` é Kotlin puro; `data` implementa as portas do domain; `ui` só
   consome `presentation`. Detalhes no SDD 02.
 

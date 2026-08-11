@@ -62,5 +62,7 @@ cd iosApp && xcodegen                                  # gera o .xcodeproj (requ
 - Pacotes `*.ui.*` ficam fora da medição de cobertura (filtro único no convention plugin).
 - Feature não importa de outra feature; só de `core/`. Comunicação entre features
   passa pelo grafo de DI/navegação.
+- Só `di/` conhece features; `core/` nunca (senão vira ciclo ao modularizar).
+  Cada feature monta a si mesma em `features/<nome>/di/` — ver ADR 0001.
 
 Detalhes em `docs/guidelines/01_style_guide.md` e `docs/sdd/02_arquitetura.md`.

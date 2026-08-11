@@ -19,15 +19,16 @@ Dentro do `composeApp`, organização por **feature**, não por camada:
 
 ```
 com/kmpfoundation/
-├── core/                  # transversal: di, ui raiz; depois navigation, design system, network
-│   ├── di/AppGraph.kt     # composition root (DI manual)
+├── di/AppGraph.kt         # composition root: o topo, único que conhece features
+├── core/                  # transversal: ui raiz; depois navigation, design system, network
 │   └── ui/App.kt          # raiz Compose (tema + casca de navegação)
 └── features/
     └── welcome/           # feature-exemplo (deletar no clone)
         ├── domain/        # entidades, portas (interfaces) e use cases — Kotlin puro
         ├── data/          # implementações das portas (HTTP, banco, SDK nativo)
         ├── presentation/  # ViewModels: TODA a lógica de apresentação
-        └── ui/            # composables: casca fina sobre o ViewModel
+        ├── ui/            # composables: casca fina sobre o ViewModel
+        └── di/            # grafo da feature: monta as próprias dependências
 ```
 
 **Regras de dependência** (verificadas em review; enforcement automático é
@@ -40,15 +41,28 @@ dívida registrada):
    features acontece no `AppGraph`/navegação. É esta regra que torna a extração
    de um módulo Gradle futuro um "mover pasta".
 
-## Injeção de dependência: manual
+## Injeção de dependência: manual, com grafo por feature
 
-Sem framework. O grafo é código explícito em `core/di/AppGraph.kt` (padrão
-herdado do `di/ImouGraph.kt` do imou-smart-home):
+Sem framework — decisão registrada no **ADR 0001**, com o gatilho para
+reavaliar. O grafo é código explícito, em dois níveis:
 
+- **`features/<nome>/di/<Nome>Graph.kt`** — único lugar que conhece as tripas da
+  feature (repositório, use case, ViewModel). Dependências compartilhadas entram
+  por construtor.
+- **`di/AppGraph.kt`** — o composition root, no topo. Cresce **uma linha por
+  feature**; cria as dependências compartilhadas e as repassa.
+
+Regras que decorrem disso:
+
+- O `AppGraph` mora **fora de `core/`**. `core/` é infraestrutura consumida pelas
+  features; um grafo lá dentro criaria ciclo (`feature → core → feature`) assim
+  que as features virarem módulos.
+- **ViewModel é criado por factory, nunca guardado no grafo.** O ciclo de vida
+  pertence ao `viewModel { }` da UI (ViewModelStore da plataforma). Guardar a
+  instância no grafo vazaria estado entre telas.
 - Dependências entram por **construtor**; defaults de produção, Fakes nos testes.
-- O `AppGraph` é o único lugar que conhece todas as features.
 - Dependências de plataforma (engines nativas, players) são criadas em
-  `MainActivity`/`MainViewController` e injetadas no grafo.
+  `MainActivity`/`MainViewController` e injetadas no `AppGraph`.
 
 ## Camada de apresentação: ViewModel multiplataforma
 
