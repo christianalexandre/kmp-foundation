@@ -13,7 +13,32 @@ adiado e o gatilho para pagar.
   outra natureza ("nenhum pixel mudou sem baseline aprovado").
 - **Gatilho:** primeira tela real com layout que valha proteger (no clone).
 
-## 2. Enforcement automático das regras de dependência entre pacotes
+## 2. A comparação de frameworks de DI do ADR 0001 já envelheceu
+
+- **O quê:** a tabela de alternativas do ADR 0001 (2026-08-11) registra dois
+  fatos que não valem mais. ADR é imutável por regra (`docs/README.md`), então
+  a correção fica aqui, e vale como insumo para a RFC quando o gatilho disparar:
+  - **Koin não é mais "erro em runtime".** Ganhou um plugin de compilador que
+    verifica o grafo em tempo de compilação — bindings faltando quebram o build.
+    Era o argumento central contra ele.
+  - **Metro não é mais "framework novo".** Está em 1.x, em produção no Cash App,
+    e a tabela de compatibilidade cobre o Kotlin **2.3.21** deste projeto
+    (Metro 0.10.0+). É plugin de compilador, não KSP — este projeto hoje não tem
+    KSP nenhum, então evitá-lo é um ganho real de superfície de build.
+- **O que continua valendo:** a política de compatibilidade do Metro é `N+.2`
+  (uma versão construída contra 2.3.0 tenta suportar até 2.3.20), ou seja, é o
+  mesmo acoplamento versão-a-versão que já pagamos com AGP ↔ Android Studio
+  (invariante no SDD 01). Toda subida de Kotlin passa a exigir consultar a
+  matriz do Metro antes.
+- **Por quê não decidimos agora:** o motivo do ADR 0001 segue de pé — o grafo
+  real não existe. O que mudou é que os **escopos** agora estão explícitos
+  (ADR 0003), que era o pré-requisito para escolher com critério.
+- **Gatilho:** o do ADR 0001 (repasse manual virando reclamação recorrente, ou
+  ~8 singletons compartilhados no `AppGraph`), ou o do ADR 0003 (aparecer um
+  terceiro escopo, entre aplicação e tela). Ao disparar: RFC comparando Metro e
+  Koin **com os dados de um spike**, não com tabela de memória.
+
+## 3. Enforcement automático das regras de dependência entre pacotes
 
 - **O quê:** as regras "feature não importa de feature" e "domain é puro"
   (SDD 02) são verificadas só em review. Automatizar via Konsist ou detekt
@@ -21,7 +46,7 @@ adiado e o gatilho para pagar.
 - **Por quê adiado:** custo/benefício baixo com uma feature de exemplo.
 - **Gatilho:** segunda feature real no clone.
 
-## 3. Detekt em versão alpha
+## 4. Detekt em versão alpha
 
 - **O quê:** usamos Detekt **2.0.0-alpha.6** (groupId novo `dev.detekt`).
 - **Por quê assim, e não na "estável":** a estável (1.23.8) é oficialmente
@@ -39,7 +64,7 @@ adiado e o gatilho para pagar.
 - **Gatilho:** trocar para a 2.0.0 estável quando sair; até lá, subir de alpha
   com o `check` como rede.
 
-## 4. Duas regras de formatação desligadas
+## 5. Duas regras de formatação desligadas
 
 - **O quê:** `ktlint>ClassSignature` e `ktlint>FunctionSignature` estão
   `active: false` no `detekt.yml`. Elas exigem colapsar assinaturas numa linha
@@ -49,14 +74,14 @@ adiado e o gatilho para pagar.
   linha alterada. Foi escolha de estilo, não limitação da ferramenta.
 - **Gatilho:** revisar se o time preferir o estilo `ktlint_official` puro.
 
-## 5. Ícone e tema do app Android
+## 6. Ícone e tema do app Android
 
 - **O quê:** o `androidApp` não declara `android:icon` (lint emite warning) nem
   tema próprio — usa `Theme.Material.Light.NoActionBar` do sistema.
 - **Por quê adiado:** o template não tem identidade visual; o clone terá.
 - **Gatilho:** clonagem para o app real.
 
-## 6. Ambientes de build e segredos fora do binário
+## 7. Ambientes de build e segredos fora do binário
 
 - **O quê:** não há `buildTypes`/flavors nem geração de configuração — uma única
   build, sem noção de dev/staging/prod e sem caminho para credenciais.
@@ -69,7 +94,7 @@ adiado e o gatilho para pagar.
   nascer com o caminho pronto para não repetir a correção tardia.
 - **Gatilho:** primeira chamada de rede real no clone.
 
-## 7. CI/CD — e os gates que dependem dela
+## 8. CI/CD — e os gates que dependem dela
 
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.
