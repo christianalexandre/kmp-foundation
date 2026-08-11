@@ -40,6 +40,12 @@ adiado e o gatilho para pagar.
   fundação que será clonada não se justifica enquanto a estável funciona.
 - **Sintoma a vigiar:** falsos positivos/negativos em código que usa recursos
   novos do Kotlin, ou falha ao ler metadata 2.3 (issue detekt#8865).
+- **Custo já observável:** é a origem do aviso "Deprecated Gradle features were
+  used in this build, making it incompatible with Gradle 10" que aparece em todo
+  build — o plugin chama `ReportingExtension.file(String)`, removido no Gradle 10.
+  Verificável com `./gradlew <task> --no-configuration-cache --warning-mode fail`
+  (o configuration cache esconde avisos de configuração quando é reusado).
+  Ou seja: **o Detekt 1.23.8 é hoje o único bloqueio conhecido para o Gradle 10.**
 - **Gatilho:** primeira release estável do Detekt 2.x.
 
 ## 5. Ícone e tema do app Android
