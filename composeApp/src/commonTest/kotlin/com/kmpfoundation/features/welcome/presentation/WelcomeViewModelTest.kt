@@ -15,11 +15,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * O `viewModelScope` usa Dispatchers.Main — nos testes ele é substituído pelo
- * dispatcher de teste via `Dispatchers.setMain`, o padrão oficial para testar
- * ViewModel fora de um device.
- */
+// `viewModelScope` roda em Dispatchers.Main, que não existe fora de um device.
 @OptIn(ExperimentalCoroutinesApi::class)
 class WelcomeViewModelTest {
 

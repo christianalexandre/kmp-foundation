@@ -47,8 +47,6 @@ class WelcomeGraphTest {
     fun viewModelEhFactory_naoInstanciaCompartilhada() {
         val graph = WelcomeGraph(messageRepository = FakeMessageRepository())
 
-        // O grafo NÃO guarda o ViewModel: quem controla o ciclo de vida é o
-        // `viewModel { }` da UI. Cada chamada devolve uma instância nova.
         assertNotSame(graph.viewModel(), graph.viewModel())
     }
 }

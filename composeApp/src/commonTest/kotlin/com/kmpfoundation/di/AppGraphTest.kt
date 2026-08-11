@@ -13,14 +13,12 @@ class AppGraphTest {
 
         val graph = AppGraph(welcome = welcome)
 
-        // O topo apenas compõe: não recria nem embrulha o grafo da feature.
         assertSame(welcome, graph.welcome)
     }
 
     @Test
     fun defaultDeProducaoMontaOGrafoSozinho() {
-        // Garante que o clone consegue instanciar o grafo inteiro sem argumentos
-        // — é o que MainActivity/MainViewController fazem.
+        // É como MainActivity/MainViewController instanciam.
         AppGraph().welcome.viewModel()
     }
 }

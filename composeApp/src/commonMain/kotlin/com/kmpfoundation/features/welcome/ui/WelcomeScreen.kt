@@ -13,12 +13,6 @@ import androidx.compose.ui.Modifier
 import com.kmpfoundation.features.welcome.presentation.WelcomeUiState
 import com.kmpfoundation.features.welcome.presentation.WelcomeViewModel
 
-// FEATURE-EXEMPLO: demonstra o padrão de camadas do template. Deletar no clone.
-
-/**
- * Casca fina: renderiza o estado e delega ações ao ViewModel. Pacotes
- * `*.ui.*` ficam fora do gate de cobertura — logo, nada de lógica aqui.
- */
 @Composable
 fun WelcomeScreen(viewModel: WelcomeViewModel) {
     val state by viewModel.state.collectAsState()

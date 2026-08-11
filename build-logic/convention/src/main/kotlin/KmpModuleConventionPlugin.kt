@@ -7,17 +7,7 @@ import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
-/**
- * Módulo KMP do projeto: Android (como library) + iOS arm64/simulador.
- *
- * A partir do AGP 9, um módulo KMP com alvo Android usa o plugin
- * `com.android.kotlin.multiplatform.library` e o bloco `androidLibrary {}` no
- * lugar de `com.android.library` + `androidTarget()`. O app Android é um módulo
- * separado (`kmpfoundation.android.app`) que consome esta library.
- *
- * O `namespace` fica com o módulo (é único por módulo); os SDK levels vêm do
- * version catalog, que é onde o valor é mantido uma vez só.
- */
+/** Módulo KMP do projeto: Android (como library) + iOS arm64/simulador. */
 class KmpModuleConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
@@ -38,7 +28,6 @@ class KmpModuleConventionPlugin : Plugin<Project> {
                 // androidUnitTest); sem isso o commonTest não roda no Android.
                 withHostTest { }
                 compilerOptions {
-                    // Alinha o bytecode do lado Android com o Java 17 do app.
                     jvmTarget.set(JvmTarget.JVM_17)
                 }
             }

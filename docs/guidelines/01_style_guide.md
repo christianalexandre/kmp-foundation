@@ -11,6 +11,22 @@
 - Exceções pontuais usam `@Suppress` **com justificativa no código**; exceções
   recorrentes viram regra no `detekt.yml` via PR.
 
+## Comentários
+
+Comentário existe para dizer **o que o código não consegue mostrar** — uma
+restrição, uma armadilha, um "por que assim e não do jeito óbvio". Não para:
+
+- repetir o nome do símbolo (`/** Entidade de domínio */` sobre uma data class
+  em `domain/`);
+- descrever a linha seguinte;
+- explicar arquitetura. Isso vive no SDD e nos ADRs, e **duplicar é pior que
+  omitir**: as duas cópias divergem, e a do código envelhece primeiro.
+
+Quando a explicação for arquitetural, aponte em vez de repetir
+(`// ver ADR 0001`). Os convention plugins em `build-logic/` são a exceção
+legítima: ali os comentários registram armadilhas de versão do AGP/Gradle que
+não estão documentadas em nenhum outro lugar do repositório.
+
 ## Testes
 
 - **Fakes, não mocks.** Um Fake é uma implementação real e mínima da interface
