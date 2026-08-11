@@ -1,0 +1,18 @@
+pre-commit:
+  commands:
+    detekt:
+      glob: "*.{kt,kts}"
+      # A task varre os source sets inteiros (não aceita lista de arquivos),
+      # mas é rápida com o cache do Gradle.
+      run: ./gradlew detekt
+
+commit-msg:
+  commands:
+    message:
+      run: ./scripts/check-commit-msg.sh {1}
+
+pre-push:
+  commands:
+    check:
+      # Gate completo: testes JVM + iOS, cobertura, detekt e lint.
+      run: ./gradlew check

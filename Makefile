@@ -1,0 +1,62 @@
+.DEFAULT_GOAL := help
+SIMULATOR ?= iPhone 17 Pro
+# Override with a UDID where the name lookup fails: SIM_DEST='id=<sim-udid>'
+SIM_DEST ?= platform=iOS Simulator,name=$(SIMULATOR)
+BUNDLE_ID := com.kmpfoundation.iosApp
+DERIVED_DATA := build/ios-derived-data
+
+.PHONY: bootstrap gen open-ios check test lint format coverage android android-run ios ios-run clean help
+
+bootstrap: ## Install tools, wire git hooks, generate the Xcode project
+	brew bundle
+	lefthook install
+	$(MAKE) gen
+
+gen: ## Regenerate the Xcode project (iosApp)
+	cd iosApp && xcodegen generate
+
+open-ios: gen ## Generate and open the Xcode project
+	open iosApp/iosApp.xcodeproj
+
+check: ## Full local gate: tests (JVM + iOS) + coverage + detekt + lint
+	./gradlew check
+
+test: ## Run the multiplatform tests only
+	./gradlew allTests
+
+lint: ## Static analysis and formatting check (detekt + ktlint)
+	./gradlew detekt
+
+format: ## Auto-fix what detekt/ktlint can fix on its own
+	./gradlew detekt --auto-correct
+
+coverage: ## Verify the 80% gate and open the HTML coverage report
+	./gradlew koverVerify koverHtmlReport
+	open composeApp/build/reports/kover/html/index.html
+
+android: ## Build the Android debug APK
+	./gradlew :androidApp:assembleDebug
+
+android-run: ## Install and launch on the connected Android device/emulator
+	./gradlew :androidApp:installDebug
+	adb shell monkey -p com.kmpfoundation -c android.intent.category.LAUNCHER 1
+
+ios: gen ## Build the iOS app for the simulator
+	cd iosApp && xcodebuild -project iosApp.xcodeproj -scheme iosApp \
+		-configuration Debug -destination '$(SIM_DEST)' \
+		-derivedDataPath ../$(DERIVED_DATA) -quiet build
+
+ios-run: ios ## Build, install and launch the app on the simulator
+	xcrun simctl boot '$(SIMULATOR)' 2>/dev/null || true
+	open -a Simulator
+	xcrun simctl install booted \
+		$(DERIVED_DATA)/Build/Products/Debug-iphonesimulator/iosApp.app
+	xcrun simctl launch booted $(BUNDLE_ID)
+
+clean: ## Remove build artifacts and the generated Xcode project
+	./gradlew clean
+	rm -rf $(DERIVED_DATA) iosApp/iosApp.xcodeproj
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'

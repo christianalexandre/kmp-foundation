@@ -36,12 +36,21 @@ arquitetura por feature já configurados.
 
 ## Comandos
 
+Tudo passa pelo `make` — rode `make` (ou `make help`) para a lista completa.
+
 ```sh
-./gradlew check                                        # testes + cobertura + detekt
-./gradlew :androidApp:assembleDebug                    # APK Android
-./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64  # framework iOS
-cd iosApp && xcodegen                                  # gera o .xcodeproj (requer `brew install xcodegen`)
+make bootstrap    # instala ferramentas, instala os git hooks e gera o projeto iOS
+make check        # gate completo: testes (JVM + iOS) + cobertura + detekt + lint
+make test         # só os testes multiplataforma
+make lint         # análise estática        | make format  para autocorrigir
+make coverage     # verifica o gate de 80% e abre o relatório HTML
+make android-run  # instala e abre no device/emulador Android
+make ios-run      # compila, instala e abre no simulador iOS
 ```
+
+O `make bootstrap` instala os hooks do [lefthook](https://lefthook.dev):
+`detekt` no pre-commit, validação da mensagem no commit-msg (Conventional
+Commits, sem trailer `Co-Authored-By`) e `check` completo no pre-push.
 
 ## Checklist de clonagem (transformar o template em app real)
 

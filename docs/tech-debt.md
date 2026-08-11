@@ -3,16 +3,7 @@
 Registro de decisões de adiamento — cada entrada diz o que falta, por que foi
 adiado e o gatilho para pagar.
 
-## 1. Pre-commit hook (enforcement automático dos gates)
-
-- **O quê:** `scripts/install-hooks.sh` instalando um hook de pre-commit que
-  rode as checagens rápidas (`./gradlew detekt`) antes de cada commit.
-- **Por quê adiado:** decisão de 2026-08-11 — sem CI/CD nesta fase, manter a
-  POC enxuta; o gate existe via `./gradlew check` manual.
-- **Gatilho:** primeira vez que código que falha o `check` entrar na branch
-  principal, ou a chegada de um segundo desenvolvedor.
-
-## 2. Gate de regressão visual para `ui/` (snapshot tests)
+## 1. Gate de regressão visual para `ui/` (snapshot tests)
 
 - **O quê:** snapshot tests com **Roborazzi** (rodam como unit test JVM via
   Robolectric) comparando screenshots com baselines versionadas.
@@ -22,7 +13,7 @@ adiado e o gatilho para pagar.
   outra natureza ("nenhum pixel mudou sem baseline aprovado").
 - **Gatilho:** primeira tela real com layout que valha proteger (no clone).
 
-## 3. Enforcement automático das regras de dependência entre pacotes
+## 2. Enforcement automático das regras de dependência entre pacotes
 
 - **O quê:** as regras "feature não importa de feature" e "domain é puro"
   (SDD 02) são verificadas só em review. Automatizar via Konsist ou detekt
@@ -30,7 +21,7 @@ adiado e o gatilho para pagar.
 - **Por quê adiado:** custo/benefício baixo com uma feature de exemplo.
 - **Gatilho:** segunda feature real no clone.
 
-## 4. Detekt em versão alpha
+## 3. Detekt em versão alpha
 
 - **O quê:** usamos Detekt **2.0.0-alpha.6** (groupId novo `dev.detekt`).
 - **Por quê assim, e não na "estável":** a estável (1.23.8) é oficialmente
@@ -48,7 +39,7 @@ adiado e o gatilho para pagar.
 - **Gatilho:** trocar para a 2.0.0 estável quando sair; até lá, subir de alpha
   com o `check` como rede.
 
-## 5. Duas regras de formatação desligadas
+## 4. Duas regras de formatação desligadas
 
 - **O quê:** `ktlint>ClassSignature` e `ktlint>FunctionSignature` estão
   `active: false` no `detekt.yml`. Elas exigem colapsar assinaturas numa linha
@@ -58,14 +49,14 @@ adiado e o gatilho para pagar.
   linha alterada. Foi escolha de estilo, não limitação da ferramenta.
 - **Gatilho:** revisar se o time preferir o estilo `ktlint_official` puro.
 
-## 6. Ícone e tema do app Android
+## 5. Ícone e tema do app Android
 
 - **O quê:** o `androidApp` não declara `android:icon` (lint emite warning) nem
   tema próprio — usa `Theme.Material.Light.NoActionBar` do sistema.
 - **Por quê adiado:** o template não tem identidade visual; o clone terá.
 - **Gatilho:** clonagem para o app real.
 
-## 7. CI/CD
+## 6. CI/CD
 
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.
