@@ -9,12 +9,16 @@ composeMultiplatform = "1.11.1"
 composeRuntime = "1.11.1"
 composeFoundation = "1.11.1"
 composeMaterial3 = "1.9.0"
-agp = "8.10.1"
+agp = "9.3.1"
+# SDK levels no catálogo (e não no convention plugin) porque com o AGP 9 a
+# config Android do módulo KMP vive no bloco `androidLibrary {}` do Kotlin, que
+# cada módulo declara — o catálogo é o que mantém o valor único.
+androidCompileSdk = "36"
+androidMinSdk = "24"
+androidTargetSdk = "36"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerialization = "1.10.0"
 # ViewModel multiplataforma da JetBrains (pacote androidx.lifecycle em commonMain).
-# Presa na 2.10.0: a 2.11.0 exige AGP 9.1+ e compileSdk 37. Só subir junto com a
-# migração do AGP (ver docs/tech-debt.md).
 jbLifecycle = "2.10.0"
 kover = "0.9.9"
 detekt = "1.23.8"
@@ -44,6 +48,9 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMul
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 androidApplication = { id = "com.android.application", version.ref = "agp" }
+# AGP 9: módulo KMP com alvo Android usa este plugin (+ bloco androidLibrary),
+# não mais com.android.library/application + androidTarget().
+androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 

@@ -30,4 +30,8 @@ dependencyResolutionManagement {
     }
 }
 
+// Lógica e UI compartilhadas (KMP: Android library + iOS framework).
 include(":composeApp")
+// Casca Android que empacota o módulo compartilhado. Separado por exigência do
+// AGP 9: um módulo KMP não pode mais ser `com.android.application`.
+include(":androidApp")

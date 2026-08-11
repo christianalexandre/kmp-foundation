@@ -1,15 +1,18 @@
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    // Targets KMP e quality gates (Kover 80% + Detekt) vêm dos convention
-    // plugins — ver build-logic/convention/src/main/kotlin/.
+    // Targets KMP (Android library + iOS) e quality gates (Kover 80% + Detekt)
+    // vêm dos convention plugins — ver build-logic/convention/src/main/kotlin/.
     id("kmpfoundation.kmp.module")
     id("kmpfoundation.quality")
 }
 
 kotlin {
+    // O namespace é por módulo; compileSdk/minSdk vêm do convention plugin.
+    android {
+        namespace = "com.kmpfoundation.shared"
+    }
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -33,18 +36,5 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
         }
-        androidMain.dependencies {
-            implementation(libs.androidx.activity.compose)
-        }
-    }
-}
-
-android {
-    namespace = "com.kmpfoundation"
-
-    defaultConfig {
-        applicationId = "com.kmpfoundation"
-        versionCode = 1
-        versionName = "0.1.0"
     }
 }

@@ -15,6 +15,10 @@ gradlePlugin {
             id = "kmpfoundation.kmp.module"
             implementationClass = "KmpModuleConventionPlugin"
         }
+        register("androidApp") {
+            id = "kmpfoundation.android.app"
+            implementationClass = "AndroidAppConventionPlugin"
+        }
         register("quality") {
             id = "kmpfoundation.quality"
             implementationClass = "QualityConventionPlugin"

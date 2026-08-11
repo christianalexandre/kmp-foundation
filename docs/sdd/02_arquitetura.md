@@ -1,8 +1,21 @@
 # SDD 02 — Arquitetura
 
+## Módulos Gradle
+
+| Módulo | Plugin Android | Papel |
+| --- | --- | --- |
+| `composeApp` | `com.android.kotlin.multiplatform.library` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
+| `androidApp` | `com.android.application` | Casca Android: `MainActivity` + manifesto. Sem lógica. |
+| `iosApp` | — (XcodeGen) | Casca iOS: entry SwiftUI que hospeda o `MainViewController`. |
+
+A separação entre `composeApp` e `androidApp` **é exigência do AGP 9**: um
+módulo KMP não pode mais ser `com.android.application`, e o entry point Android
+precisa de um módulo próprio. O efeito colateral é bom — as duas cascas
+(Android e iOS) ficam simétricas em volta do mesmo núcleo compartilhado.
+
 ## Organização: package-by-feature
 
-Um módulo Gradle (`composeApp`), organizado por **feature**, não por camada:
+Dentro do `composeApp`, organização por **feature**, não por camada:
 
 ```
 com/kmpfoundation/
@@ -91,7 +104,8 @@ Compose em `commonMain`.
 O template nasce com um módulo por simplicidade, mas preparado para dividir:
 
 1. Criar `features/<nome>/` como módulo Gradle aplicando os convention plugins
-   (`kmpfoundation.kmp.module` + `kmpfoundation.quality`) — os gates vêm juntos.
+   (`kmpfoundation.kmp.module` + `kmpfoundation.quality`) — os gates e os
+   targets vêm juntos; o módulo só declara o próprio `namespace`.
 2. Mover a pasta da feature (a regra 4 garante que não há imports cruzados).
 3. **iOS**: novos módulos precisam de `export()` no framework umbrella do
    `composeApp` para seus tipos aparecerem no header Objective-C.

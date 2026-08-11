@@ -30,25 +30,26 @@ adiado e o gatilho para pagar.
 - **Por quê adiado:** custo/benefício baixo com uma feature de exemplo.
 - **Gatilho:** segunda feature real no clone.
 
-## 4. Migração para o Android Gradle Plugin 9.x
+## 4. Detekt fora da matriz de compatibilidade oficial
 
-- **O quê:** o projeto está no AGP 8.10.1 / Gradle 8.11.1 / compileSdk 35.
-- **Por quê adiado:** decisão de 2026-08-11, depois de levantar o custo real —
-  o AGP 9 não é uma atualização de versão, é uma migração:
-  - esconde a DSL antiga (`BaseExtension`, usada hoje pelo
-    `KmpModuleConventionPlugin`) atrás das novas interfaces;
-  - **projetos KMP precisam adotar o novo Android Gradle Library Plugin for KMP**;
-  - exige Gradle 9.1+ e build-tools 36;
-  - remove as APIs de variant antigas (`applicationVariants`, `variantFilter`) e
-    força defaults novos (`android.newDsl`, `builtInKotlin`, `uniquePackageNames`).
-  Somado a isso, o template mantém paridade com o `imou-smart-home` (AGP 8.10.1,
-  com módulos vendorados legados), que é o projeto que herdará esta fundação.
-- **Consequência atual:** `lifecycle` preso na 2.10.0 — a 2.11.0 exige AGP 9.1+
-  e compileSdk 37.
-- **Gatilho:** quando o app real precisar de uma dependência que exija AGP 9, ou
-  quando o Kotlin/CMP passarem a exigir. Merece RFC própria (é migração, não bump).
+- **O quê:** usamos Detekt **1.23.8**, que é oficialmente construído e testado
+  contra **Gradle 8.12.1 e Kotlin 2.0.21** — estamos em Gradle 9.5 e Kotlin
+  2.3.21. Na prática funciona (o `check` passa), mas não é combinação suportada.
+- **Por quê adiado:** a versão que suporta Gradle 9.x é a **2.0.0, que só existe
+  em alpha** (`2.0.0-alpha.6`, e com groupId novo: `dev.detekt`). Alpha numa
+  fundação que será clonada não se justifica enquanto a estável funciona.
+- **Sintoma a vigiar:** falsos positivos/negativos em código que usa recursos
+  novos do Kotlin, ou falha ao ler metadata 2.3 (issue detekt#8865).
+- **Gatilho:** primeira release estável do Detekt 2.x.
 
-## 5. CI/CD
+## 5. Ícone e tema do app Android
+
+- **O quê:** o `androidApp` não declara `android:icon` (lint emite warning) nem
+  tema próprio — usa `Theme.Material.Light.NoActionBar` do sistema.
+- **Por quê adiado:** o template não tem identidade visual; o clone terá.
+- **Gatilho:** clonagem para o app real.
+
+## 6. CI/CD
 
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.

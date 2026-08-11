@@ -1,4 +1,4 @@
-package com.kmpfoundation
+package com.kmpfoundation.androidapp
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

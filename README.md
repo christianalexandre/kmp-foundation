@@ -11,15 +11,23 @@ arquitetura por feature já configurados.
 | --- | --- |
 | Documentação | `docs/` com RFC, ADR, SDD e guidelines (ciclo de vida em `docs/README.md`) |
 | Quality gates | Kover (cobertura de linha ≥ 80%) + Detekt (com formatting/ktlint), ambos em `./gradlew check` |
-| Build | Version Catalog (`gradle/libs.versions.toml`) + convention plugins em `build-logic/` |
-| Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), DI manual |
+| Build | AGP 9 + Gradle 9.5, Version Catalog (`gradle/libs.versions.toml`) e convention plugins em `build-logic/` |
+| Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), DI manual + ViewModel multiplataforma |
 | Exemplo | `features/welcome/` demonstra o padrão completo com testes usando Fakes |
+
+## Módulos
+
+| Módulo | Papel |
+| --- | --- |
+| `composeApp` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
+| `androidApp` | Casca Android (`MainActivity`). Sem lógica — o AGP 9 exige que o app seja um módulo separado do módulo KMP. |
+| `iosApp` | Casca iOS (SwiftUI + XcodeGen). |
 
 ## Comandos
 
 ```sh
 ./gradlew check                                        # testes + cobertura + detekt
-./gradlew :composeApp:assembleDebug                    # APK Android
+./gradlew :androidApp:assembleDebug                    # APK Android
 ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64  # framework iOS
 cd iosApp && xcodegen                                  # gera o .xcodeproj (requer `brew install xcodegen`)
 ```
