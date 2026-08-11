@@ -12,16 +12,22 @@ import kotlin.coroutines.resume
  *
  * - **sem `suspend`** — vira bloco de completion ilegível no Swift;
  * - **sem `sealed`/genérico** nos parâmetros — não sobrevive à exportação;
- * - callback explícito, com `cancel()` para o cancelamento cooperativo.
+ * - callback explícito, com um [Cancellable] **por chamada** — ver ADR 0004.
  *
  * O Kotlin nunca chama isto na mão: usa o adapter [greet], que devolve o tipo
- * selado e liga o cancelamento da coroutine ao `cancel()` da engine.
+ * selado e liga o cancelamento da coroutine ao handle daquela chamada.
  */
 interface GreetingEngine {
     val isAvailable: Boolean
 
-    fun greet(name: String, callback: GreetingCallback)
+    fun greet(name: String, callback: GreetingCallback): Cancellable
+}
 
+/**
+ * Handle de UMA chamada em andamento. É a engine que o cria, e cancelá-lo não
+ * pode afetar nenhuma outra chamada da mesma engine (ADR 0004).
+ */
+interface Cancellable {
     fun cancel()
 }
 
@@ -32,15 +38,14 @@ interface GreetingCallback {
 
 /**
  * Adapter para o lado Kotlin: converte o callback em `suspend` e propaga o
- * cancelamento da coroutine para a engine nativa.
+ * cancelamento da coroutine para a chamada nativa correspondente.
  */
 suspend fun GreetingEngine.greet(name: String): Outcome<String> {
     if (!isAvailable) {
         return Outcome.Failure(AppError.Platform("engine indisponível nesta plataforma"))
     }
     return suspendCancellableCoroutine { continuation ->
-        continuation.invokeOnCancellation { cancel() }
-        greet(
+        val handle = greet(
             name,
             object : GreetingCallback {
                 override fun onResult(greeting: String?, errorMessage: String?) {
@@ -58,5 +63,9 @@ suspend fun GreetingEngine.greet(name: String): Outcome<String> {
                 }
             },
         )
+        // Registrado DEPOIS de ter o handle: se a coroutine já tiver sido
+        // cancelada nesse meio-tempo, o próprio invokeOnCancellation dispara na
+        // hora — nenhuma chamada nativa fica órfã.
+        continuation.invokeOnCancellation { handle.cancel() }
     }
 }

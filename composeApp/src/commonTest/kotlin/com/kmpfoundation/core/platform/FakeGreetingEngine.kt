@@ -10,24 +10,28 @@ class FakeGreetingEngine(
     private val errorMessage: String? = null,
     private val respondImmediately: Boolean = true,
 ) : GreetingEngine {
-    var cancelCount = 0
-        private set
-    var lastName: String? = null
-        private set
+    val calls = mutableListOf<Call>()
 
-    private var pending: GreetingCallback? = null
-
-    override fun greet(name: String, callback: GreetingCallback) {
-        lastName = name
+    override fun greet(name: String, callback: GreetingCallback): Cancellable {
+        val call = Call(name, callback)
+        calls += call
         if (respondImmediately) {
             callback.onResult(greeting, errorMessage)
-        } else {
-            pending = callback
         }
+        return call
     }
 
-    override fun cancel() {
-        cancelCount++
-        pending = null
+    /** Responds to a pending call, so tests can interleave concurrent calls. */
+    fun respondTo(call: Call, greeting: String? = null, errorMessage: String? = null) {
+        call.callback.onResult(greeting, errorMessage)
+    }
+
+    class Call(val name: String, internal val callback: GreetingCallback) : Cancellable {
+        var isCancelled = false
+            private set
+
+        override fun cancel() {
+            isCancelled = true
+        }
     }
 }

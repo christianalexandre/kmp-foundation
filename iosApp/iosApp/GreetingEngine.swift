@@ -9,11 +9,12 @@ import ComposeApp
 /// porque a interface Kotlin evita `suspend` e tipos selados na assinatura —
 /// nenhum dos dois sobrevive à exportação para o header Objective-C.
 final class SwiftGreetingEngine: NSObject, GreetingEngine {
-    private var work: DispatchWorkItem?
-
     var isAvailable: Bool { true }
 
-    func greet(name: String, callback: GreetingCallback) {
+    /// Sem estado de chamada na engine: o handle devolvido é o dono do
+    /// `DispatchWorkItem`, então cancelar uma chamada não afeta as outras
+    /// (ADR 0004).
+    func greet(name: String, callback: GreetingCallback) -> Cancellable {
         let device = UIDevice.current
         let work = DispatchWorkItem {
             callback.onResult(
@@ -21,12 +22,19 @@ final class SwiftGreetingEngine: NSObject, GreetingEngine {
                 errorMessage: nil
             )
         }
-        self.work = work
         DispatchQueue.main.async(execute: work)
+        return WorkItemCancellable(work: work)
+    }
+}
+
+private final class WorkItemCancellable: NSObject, Cancellable {
+    private let work: DispatchWorkItem
+
+    init(work: DispatchWorkItem) {
+        self.work = work
     }
 
     func cancel() {
-        work?.cancel()
-        work = nil
+        work.cancel()
     }
 }
