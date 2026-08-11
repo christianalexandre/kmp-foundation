@@ -24,8 +24,10 @@
   `data`, `presentation`, `core` (exceto `core/ui`). O que não conta: `*.ui.*`
   e entry points de plataforma.
 - **Corolário: lógica não vive em `ui/`.** Composable é casca fina — renderiza
-  estado e delega ações ao state holder. Condicional de negócio num composable
+  estado e delega ações ao ViewModel. Condicional de negócio num composable
   é defeito de review, porque escapa do gate.
+- ViewModels são testados com `Dispatchers.setMain(StandardTestDispatcher())`
+  no `@BeforeTest` (+ `resetMain` no `@AfterTest`) — ver `WelcomeViewModelTest`.
 
 ## Arquitetura (regras de dependência)
 

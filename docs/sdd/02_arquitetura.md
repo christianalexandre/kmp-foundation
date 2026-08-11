@@ -13,8 +13,8 @@ com/kmpfoundation/
     └── welcome/           # feature-exemplo (deletar no clone)
         ├── domain/        # entidades, portas (interfaces) e use cases — Kotlin puro
         ├── data/          # implementações das portas (HTTP, banco, SDK nativo)
-        ├── presentation/  # state holders: TODA a lógica de apresentação
-        └── ui/            # composables: casca fina sobre o state holder
+        ├── presentation/  # ViewModels: TODA a lógica de apresentação
+        └── ui/            # composables: casca fina sobre o ViewModel
 ```
 
 **Regras de dependência** (verificadas em review; enforcement automático é
@@ -36,6 +36,19 @@ herdado do `di/ImouGraph.kt` do imou-smart-home):
 - O `AppGraph` é o único lugar que conhece todas as features.
 - Dependências de plataforma (engines nativas, players) são criadas em
   `MainActivity`/`MainViewController` e injetadas no grafo.
+
+## Camada de apresentação: ViewModel multiplataforma
+
+`presentation/` usa o **ViewModel da JetBrains** (`org.jetbrains.androidx.lifecycle`,
+mesmo pacote `androidx.lifecycle` em `commonMain`) com `viewModelScope`:
+
+- No Android, sobrevive à recriação da Activity; com navegação, fica escopado
+  ao destino (motivo de tê-lo adotado já na POC).
+- **Divisão de papéis com o DI manual**: o `AppGraph` monta o objeto (factory
+  `welcomeViewModel()`), a UI o registra no ciclo de vida com
+  `viewModel { graph.welcomeViewModel() }` — o grafo nunca guarda ViewModel.
+- Nos testes, `Dispatchers.setMain(StandardTestDispatcher())` substitui o Main
+  do `viewModelScope` (ver `WelcomeViewModelTest`); segue sem mocks, só Fakes.
 
 ## Fronteira KMP ↔ nativo (convenções herdadas do imou-smart-home)
 

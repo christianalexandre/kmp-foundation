@@ -38,7 +38,7 @@ cd iosApp && xcodegen                                  # gera o .xcodeproj (requ
 
 ## Regras que sustentam o gate de cobertura
 
-- Lógica **não** vive em `ui/` — composables são casca fina sobre um state holder.
+- Lógica **não** vive em `ui/` — composables são casca fina sobre um ViewModel.
 - Pacotes `*.ui.*` ficam fora da medição de cobertura (filtro único no convention plugin).
 - Feature não importa de outra feature; só de `core/`. Comunicação entre features
   passa pelo grafo de DI/navegação.

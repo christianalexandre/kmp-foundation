@@ -30,7 +30,25 @@ adiado e o gatilho para pagar.
 - **Por quê adiado:** custo/benefício baixo com uma feature de exemplo.
 - **Gatilho:** segunda feature real no clone.
 
-## 4. CI/CD
+## 4. Migração para o Android Gradle Plugin 9.x
+
+- **O quê:** o projeto está no AGP 8.10.1 / Gradle 8.11.1 / compileSdk 35.
+- **Por quê adiado:** decisão de 2026-08-11, depois de levantar o custo real —
+  o AGP 9 não é uma atualização de versão, é uma migração:
+  - esconde a DSL antiga (`BaseExtension`, usada hoje pelo
+    `KmpModuleConventionPlugin`) atrás das novas interfaces;
+  - **projetos KMP precisam adotar o novo Android Gradle Library Plugin for KMP**;
+  - exige Gradle 9.1+ e build-tools 36;
+  - remove as APIs de variant antigas (`applicationVariants`, `variantFilter`) e
+    força defaults novos (`android.newDsl`, `builtInKotlin`, `uniquePackageNames`).
+  Somado a isso, o template mantém paridade com o `imou-smart-home` (AGP 8.10.1,
+  com módulos vendorados legados), que é o projeto que herdará esta fundação.
+- **Consequência atual:** `lifecycle` preso na 2.10.0 — a 2.11.0 exige AGP 9.1+
+  e compileSdk 37.
+- **Gatilho:** quando o app real precisar de uma dependência que exija AGP 9, ou
+  quando o Kotlin/CMP passarem a exigir. Merece RFC própria (é migração, não bump).
+
+## 5. CI/CD
 
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.

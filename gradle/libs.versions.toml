@@ -12,6 +12,10 @@ composeMaterial3 = "1.9.0"
 agp = "8.10.1"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerialization = "1.10.0"
+# ViewModel multiplataforma da JetBrains (pacote androidx.lifecycle em commonMain).
+# Presa na 2.10.0: a 2.11.0 exige AGP 9.1+ e compileSdk 37. Só subir junto com a
+# migração do AGP (ver docs/tech-debt.md).
+jbLifecycle = "2.10.0"
 kover = "0.9.9"
 detekt = "1.23.8"
 androidx-activityCompose = "1.10.1"
@@ -20,6 +24,8 @@ androidx-activityCompose = "1.10.1"
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeRuntime" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeFoundation" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
+lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "jbLifecycle" }
+lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "jbLifecycle" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }

@@ -10,19 +10,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.kmpfoundation.features.welcome.presentation.WelcomeStateHolder
 import com.kmpfoundation.features.welcome.presentation.WelcomeUiState
+import com.kmpfoundation.features.welcome.presentation.WelcomeViewModel
 
 // FEATURE-EXEMPLO: demonstra o padrão de camadas do template. Deletar no clone.
 
 /**
- * Casca fina: renderiza o estado e delega ações ao state holder. Pacotes
+ * Casca fina: renderiza o estado e delega ações ao ViewModel. Pacotes
  * `*.ui.*` ficam fora do gate de cobertura — logo, nada de lógica aqui.
  */
 @Composable
-fun WelcomeScreen(stateHolder: WelcomeStateHolder) {
-    val state by stateHolder.state.collectAsState()
-    LaunchedEffect(stateHolder) { stateHolder.load() }
+fun WelcomeScreen(viewModel: WelcomeViewModel) {
+    val state by viewModel.state.collectAsState()
+    LaunchedEffect(viewModel) { viewModel.load() }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         when (val current = state) {
