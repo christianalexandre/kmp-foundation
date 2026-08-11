@@ -1,0 +1,24 @@
+# Config do Detekt construída SOBRE os defaults (buildUponDefaultConfig=true no
+# QualityConventionPlugin): aqui só o que diverge deles. O ruleset `formatting`
+# (ktlint embutido) é ativado automaticamente pela dependência detekt-formatting.
+
+build:
+  # Qualquer issue falha o build — o gate é rígido por decisão.
+  maxIssues: 0
+
+naming:
+  FunctionNaming:
+    # Composables usam PascalCase por convenção do Compose.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MagicNumber:
+    excludes: ['**/commonTest/**', '**/*Test.kt']
+    ignorePropertyDeclaration: true
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  LongParameterList:
+    # Composables legitimamente recebem muitos parâmetros (state hoisting).
+    ignoreAnnotated: ['Composable']

@@ -1,0 +1,53 @@
+name: iosApp
+options:
+  bundleIdPrefix: com.kmpfoundation
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    SWIFT_VERSION: "5.9"
+    # O módulo KMP só declara iosSimulatorArm64 (o CMP 1.11+ não publica o
+    # alvo Intel iosX64); sem isso, builds "generic" de simulador quebram.
+    "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kmpfoundation.iosApp
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS: "$(inherited) -framework ComposeApp"
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: kmp-foundation
+        # Exigido pelo Compose Multiplatform iOS (PlistSanityCheck): habilita
+        # ProMotion/120Hz e evita crash na inicialização.
+        CADisableMinimumFrameDurationOnPhone: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    preBuildScripts:
+      - name: Compile Kotlin Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "YES" = "$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED" ]; then
+            echo "Skipping Gradle build task invocation (IDE build)."
+            exit 0
+          fi
+          cd "$SRCROOT/.."
+          ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
+
+schemes:
+  iosApp:
+    build:
+      targets:
+        iosApp: all
+    run:
+      config: Debug

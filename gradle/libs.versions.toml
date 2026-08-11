@@ -1,0 +1,45 @@
+# Baseado no catálogo do imou-smart-home para o clone futuro não divergir de
+# versões (lá há pins sensíveis a ABI do Kotlin — ver o comentário do Coil).
+[versions]
+kotlin = "2.3.21"
+composeMultiplatform = "1.11.1"
+# As libs do CMP versionam separadamente do plugin desde a 1.9 (por isso os
+# accessors `compose.*` do plugin foram deprecados): material3 segue trilha
+# própria — é a versão que o plugin CMP 1.11.1 resolve, não 1.11.x.
+composeRuntime = "1.11.1"
+composeFoundation = "1.11.1"
+composeMaterial3 = "1.9.0"
+agp = "8.10.1"
+kotlinxCoroutines = "1.10.2"
+kotlinxSerialization = "1.10.0"
+kover = "0.9.9"
+detekt = "1.23.8"
+androidx-activityCompose = "1.10.1"
+
+[libraries]
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeRuntime" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeFoundation" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+
+# Consumidas pelo build-logic (convention plugins) como implementation.
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kover-gradle-plugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
+detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+
+[plugins]
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+# Convention plugins (build-logic/): aplicar por id nos módulos —
+# id("kmpfoundation.kmp.module") e id("kmpfoundation.quality").
