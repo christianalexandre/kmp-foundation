@@ -18,17 +18,20 @@ gen: ## Regenerate the Xcode project (iosApp)
 open-ios: gen ## Generate and open the Xcode project
 	open iosApp/iosApp.xcodeproj
 
-check: ## Full local gate: tests (JVM + iOS) + coverage + detekt + lint
+check: ## Full local gate: tests (JVM + iOS) + coverage + detekt + swiftlint + lint
 	./gradlew check
+	swiftlint lint --strict --quiet
 
 test: ## Run the multiplatform tests only
 	./gradlew allTests
 
-lint: ## Static analysis and formatting check (detekt + ktlint)
-	./gradlew detekt
+lint: ## Static analysis: detekt (inclui build-logic) + swiftlint
+	./gradlew detekt detektBuildLogic
+	swiftlint lint --strict --quiet
 
-format: ## Auto-fix what detekt/ktlint can fix on its own
+format: ## Auto-fix what detekt/ktlint and swiftlint can fix on their own
 	./gradlew detekt --auto-correct
+	swiftlint --fix --quiet
 
 coverage: ## Verify the 80% gate and open the HTML coverage report
 	./gradlew koverVerify koverHtmlReport

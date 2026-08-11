@@ -3,8 +3,13 @@ pre-commit:
     detekt:
       glob: "*.{kt,kts}"
       # A task varre os source sets inteiros (não aceita lista de arquivos),
-      # mas é rápida com o cache do Gradle.
-      run: ./gradlew detekt
+      # mas é rápida com o cache do Gradle. `detektBuildLogic` alcança os
+      # convention plugins, que estão numa included build.
+      run: ./gradlew detekt detektBuildLogic
+    swiftlint:
+      glob: "*.swift"
+      # Aqui dá para passar só os arquivos staged — é instantâneo.
+      run: swiftlint lint --strict --quiet {staged_files}
 
 commit-msg:
   commands:

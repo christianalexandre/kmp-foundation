@@ -1,0 +1,25 @@
+# Análise estática do código Swift — o equivalente do detekt.yml para o iosApp.
+# Rodado com `--strict` (make lint / pre-commit), então warning também falha:
+# mesma rigidez do gate Kotlin (`failOnSeverity = Info`).
+
+included:
+  - iosApp/iosApp
+
+# Alinhado ao .editorconfig (120 colunas, 4 espaços).
+line_length:
+  warning: 120
+  error: 120
+
+type_name:
+  # O `@main struct iOSApp` segue a convenção da Apple, não a do SwiftLint.
+  excluded:
+    - iOSApp
+
+opt_in_rules:
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - redundant_nil_coalescing
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
