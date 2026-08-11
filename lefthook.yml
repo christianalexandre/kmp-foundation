@@ -13,6 +13,10 @@ commit-msg:
 
 pre-push:
   commands:
-    check:
-      # Gate completo: testes JVM + iOS, cobertura, detekt e lint.
-      run: ./gradlew check
+    tests:
+      # Só os testes JVM (~2s). Teste quebrado nunca é trabalho-em-andamento
+      # legítimo, então vale barrar; já o gate de cobertura NÃO entra aqui de
+      # propósito: ele impediria o push de uma branch de WIP (backup, PR em
+      # draft, spike), e o lugar dele é bloquear o merge, não o push.
+      # Cobertura, testes iOS e lint são gate de PR — ver docs/tech-debt.md.
+      run: ./gradlew :composeApp:testAndroidHostTest
