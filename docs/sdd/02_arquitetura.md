@@ -20,7 +20,9 @@ Dentro do `composeApp`, organização por **feature**, não por camada:
 ```
 com/kmpfoundation/
 ├── di/AppGraph.kt         # composition root: o topo, único que conhece features
-├── core/                  # transversal: ui raiz; depois navigation, design system, network
+├── core/                  # transversal; depois navigation, design system, network
+│   ├── platform/          # fronteira nativa: expect/actual e engines (ver abaixo)
+│   ├── result/            # Outcome + AppError (ADR 0002)
 │   └── ui/App.kt          # raiz Compose (tema + casca de navegação)
 └── features/
     └── welcome/           # feature-exemplo (deletar no clone)
@@ -77,15 +79,24 @@ mesmo pacote `androidx.lifecycle` em `commonMain`) com `viewModelScope`:
 - Nos testes, `Dispatchers.setMain(StandardTestDispatcher())` substitui o Main
   do `viewModelScope` (ver `WelcomeViewModelTest`); segue sem mocks, só Fakes.
 
-## Fronteira KMP ↔ nativo (convenções herdadas do imou-smart-home)
+## Tratamento de erro
 
-Estas convenções foram provadas no projeto imou-smart-home e valem como padrão:
+`Outcome<T>` selado com `AppError` tipado, em `core/result/` — **ADR 0002**.
+Operação que pode falhar declara isso na assinatura; a tradução de erro para
+texto e ação acontece no ViewModel, nunca no composable.
+
+## Fronteira KMP ↔ nativo
+
+Convenções provadas no imou-smart-home e **executadas aqui** em
+`core/platform/` — o exemplo é o `GreetingEngine`, deliberadamente trivial no
+que faz e fiel no formato.
 
 ### Interface Swift-friendly para engines nativas
 
 Quando o iOS precisa implementar um contrato Kotlin (engine de netconfig,
 player, scanner), a interface em `commonMain` **não usa `suspend` nem `sealed`
-nas assinaturas** — Swift não os consome bem via Objective-C header. O padrão é:
+nas assinaturas** — nenhum dos dois sobrevive bem à exportação para o header
+Objective-C. O padrão, como está em `core/platform/GreetingEngine.kt`:
 
 ```kotlin
 interface SomeEngine {
@@ -93,12 +104,21 @@ interface SomeEngine {
     fun start(request: Request, callback: Callback)   // callback explícito
     fun cancel()
 }
-suspend fun SomeEngine.execute(request: Request): Result = // adapter p/ Kotlin
+suspend fun SomeEngine.execute(request: Request): Outcome<T> =  // adapter p/ Kotlin
     suspendCancellableCoroutine { /* callback → continuation; cancel() no cancel */ }
 ```
 
-O Swift conforma direto ao protocolo exportado no framework; o lado Kotlin usa
-o adapter `suspend`. Precedente: `NetconfigEngine` no imou-smart-home.
+O Swift conforma direto ao protocolo exportado no framework
+(`iosApp/iosApp/GreetingEngine.swift`); o lado Kotlin usa o adapter `suspend`,
+que também liga o cancelamento da coroutine ao `cancel()` da engine.
+
+**Quem constrói a engine é a casca da plataforma** (`MainActivity` /
+`MainViewController`), que a injeta no `AppGraph` — só ela conhece o SDK.
+Em `commonTest`, um Fake da engine permite testar toda a lógica dependente de
+plataforma sem device nem simulador.
+
+O caso simples da fronteira (dado sem callback nem ciclo de vida) usa
+`expect/actual` direto: ver `core/platform/Platform.kt`.
 
 ### Navegação: pilha única, bottom bar só na raiz
 

@@ -1,6 +1,9 @@
 package com.kmpfoundation.features.welcome.di
 
+import com.kmpfoundation.core.platform.FakeGreetingEngine
+import com.kmpfoundation.core.result.Outcome
 import com.kmpfoundation.features.welcome.FakeMessageRepository
+import com.kmpfoundation.features.welcome.domain.WelcomeMessage
 import com.kmpfoundation.features.welcome.presentation.WelcomeUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,7 +35,7 @@ class WelcomeGraphTest {
 
     @Test
     fun montaOViewModelComAsDependenciasRecebidas() = runTest(dispatcher) {
-        val repository = FakeMessageRepository()
+        val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("olá dos testes")))
         val graph = WelcomeGraph(messageRepository = repository)
 
         val viewModel = graph.viewModel()
@@ -44,8 +47,19 @@ class WelcomeGraphTest {
     }
 
     @Test
-    fun viewModelEhFactory_naoInstanciaCompartilhada() {
-        val graph = WelcomeGraph(messageRepository = FakeMessageRepository())
+    fun montaAPartirDaEngineDePlataforma() = runTest(dispatcher) {
+        val graph = WelcomeGraph(FakeGreetingEngine(greeting = "olá do fake"))
+
+        val viewModel = graph.viewModel()
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertEquals(WelcomeUiState.Content("olá do fake"), viewModel.state.value)
+    }
+
+    @Test
+    fun viewModelEhFactory() {
+        val graph = WelcomeGraph(FakeGreetingEngine())
 
         assertNotSame(graph.viewModel(), graph.viewModel())
     }

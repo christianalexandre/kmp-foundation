@@ -56,7 +56,20 @@ adiado e o gatilho para pagar.
 - **Por quê adiado:** o template não tem identidade visual; o clone terá.
 - **Gatilho:** clonagem para o app real.
 
-## 6. CI/CD — e os gates que dependem dela
+## 6. Ambientes de build e segredos fora do binário
+
+- **O quê:** não há `buildTypes`/flavors nem geração de configuração — uma única
+  build, sem noção de dev/staging/prod e sem caminho para credenciais.
+- **Por quê adiado:** o template não fala com backend nenhum; a decisão depende
+  de como o middleware do app real exporá ambientes.
+- **Precedente a seguir:** no `imou-smart-home`, `appId`/`appSecret` vêm do
+  `local.properties` (ou variável de ambiente) e são gerados em código por uma
+  task do Gradle (`ImouSecrets`). O ADR 0001 de lá registra que **manter segredo
+  no binário é inviável em produção** — extraível do APK/IPA. O template deve
+  nascer com o caminho pronto para não repetir a correção tardia.
+- **Gatilho:** primeira chamada de rede real no clone.
+
+## 7. CI/CD — e os gates que dependem dela
 
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.
@@ -67,4 +80,9 @@ adiado e o gatilho para pagar.
   **bloquear o merge, não o push**. Localmente ficou o que nunca é WIP legítimo:
   teste quebrado (`allTests`, JVM **e** iOS, ~6s no pre-push) e lint (`detekt`,
   <1s no pre-commit).
-- **Gatilho:** repositório compartilhado com mais de um contribuidor ativo.
+- **Urgência maior desde 2026-08-11:** ao tirar a cobertura do pre-push
+  (bloqueava WIP legítimo), o gate de 80% **deixou de rodar automaticamente em
+  qualquer lugar**. Hoje ele só existe se alguém rodar `make check` na mão. A CI
+  não é só conveniência — é o que devolve um gate que o projeto já tinha.
+- **Gatilho:** repositório compartilhado com mais de um contribuidor ativo, ou
+  antes disso se o gate de cobertura começar a ser violado sem ninguém notar.

@@ -7,7 +7,7 @@ import ComposeApp
 /// como parâmetros de MainViewController — padrão do imou-smart-home.
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        MainViewControllerKt.MainViewController()
+        MainViewControllerKt.MainViewController(greetingEngine: SwiftGreetingEngine())
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

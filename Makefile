@@ -47,11 +47,17 @@ ios: gen ## Build the iOS app for the simulator
 		-derivedDataPath ../$(DERIVED_DATA) -quiet build
 
 ios-run: ios ## Build, install and launch the app on the simulator
-	xcrun simctl boot '$(SIMULATOR)' 2>/dev/null || true
-	open -a Simulator
-	xcrun simctl install booted \
-		$(DERIVED_DATA)/Build/Products/Debug-iphonesimulator/iosApp.app
-	xcrun simctl launch booted $(BUNDLE_ID)
+	@# O UDID é resolvido pelo nome porque `booted` instala no simulador errado
+	@# quando há mais de um ligado — e o app roda desatualizado, sem aviso.
+	@set -e; \
+	udid=$$(xcrun simctl list devices available | grep -m1 '$(SIMULATOR) (' \
+		| grep -oE '[0-9A-Fa-f-]{36}'); \
+	test -n "$$udid" || { echo "simulador '$(SIMULATOR)' não encontrado"; exit 1; }; \
+	xcrun simctl boot $$udid 2>/dev/null || true; \
+	open -a Simulator; \
+	xcrun simctl install $$udid \
+		$(DERIVED_DATA)/Build/Products/Debug-iphonesimulator/iosApp.app; \
+	xcrun simctl launch $$udid $(BUNDLE_ID)
 
 clean: ## Remove build artifacts and the generated Xcode project
 	./gradlew clean

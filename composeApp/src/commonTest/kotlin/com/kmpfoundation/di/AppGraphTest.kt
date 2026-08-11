@@ -1,24 +1,15 @@
 package com.kmpfoundation.di
 
-import com.kmpfoundation.features.welcome.FakeMessageRepository
-import com.kmpfoundation.features.welcome.di.WelcomeGraph
+import com.kmpfoundation.core.platform.FakeGreetingEngine
 import kotlin.test.Test
-import kotlin.test.assertSame
+import kotlin.test.assertNotSame
 
 class AppGraphTest {
 
     @Test
-    fun exponeOGrafoDaFeatureRecebido() {
-        val welcome = WelcomeGraph(messageRepository = FakeMessageRepository())
+    fun montaOGrafoAPartirDaEngineDePlataforma() {
+        val graph = AppGraph(FakeGreetingEngine())
 
-        val graph = AppGraph(welcome = welcome)
-
-        assertSame(welcome, graph.welcome)
-    }
-
-    @Test
-    fun defaultDeProducaoMontaOGrafoSozinho() {
-        // É como MainActivity/MainViewController instanciam.
-        AppGraph().welcome.viewModel()
+        assertNotSame(graph.welcome.viewModel(), graph.welcome.viewModel())
     }
 }
