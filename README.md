@@ -50,12 +50,13 @@ make ios-run      # compila, instala e abre no simulador iOS
 
 O `make bootstrap` instala os hooks do [lefthook](https://lefthook.dev):
 `detekt` no pre-commit (<1s), validação da mensagem no commit-msg (Conventional
-Commits, sem trailer `Co-Authored-By`) e os testes JVM no pre-push (~2s).
+Commits, sem trailer `Co-Authored-By`) e os testes das **duas plataformas** no
+pre-push (~6s) — o mesmo `commonTest` pode passar na JVM e falhar no iOS.
 
 O **gate de cobertura não roda nos hooks** de propósito: ele bloquearia o push
-de trabalho em andamento (branch de backup, PR em draft, spike). Cobertura,
-testes iOS e lint completo são gate de **PR**, não de push — rode `make check`
-quando quiser o gate inteiro localmente.
+de trabalho em andamento (branch de backup, PR em draft, spike). Cobertura e
+lint completo são gate de **PR**, não de push — rode `make check` quando quiser
+o gate inteiro localmente.
 
 ## Checklist de clonagem (transformar o template em app real)
 

@@ -61,10 +61,10 @@ adiado e o gatilho para pagar.
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.
 - **Escopo obrigatório quando existir** (decisão de 2026-08-11): **gate de
-  cobertura ≥ 80%**, testes iOS e lint completo. Eles saíram do pre-push porque
-  bloqueavam o push de trabalho em andamento — subir branch para backup, abrir
+  cobertura ≥ 80%** e lint completo. A cobertura saiu do pre-push porque
+  bloqueava o push de trabalho em andamento — subir branch para backup, abrir
   PR em draft ou empurrar um spike são usos legítimos, e cobertura deve
-  **bloquear o merge, não o push**. Localmente sobrou só o que nunca é WIP
-  legítimo: teste quebrado (`testAndroidHostTest`, ~2s no pre-push) e lint
-  (`detekt`, <1s no pre-commit).
+  **bloquear o merge, não o push**. Localmente ficou o que nunca é WIP legítimo:
+  teste quebrado (`allTests`, JVM **e** iOS, ~6s no pre-push) e lint (`detekt`,
+  <1s no pre-commit).
 - **Gatilho:** repositório compartilhado com mais de um contribuidor ativo.
