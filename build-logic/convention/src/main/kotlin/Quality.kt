@@ -1,5 +1,6 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.extensions.DetektExtension
+import dev.detekt.gradle.extensions.FailOnSeverity
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -15,16 +16,19 @@ internal const val MIN_LINE_COVERAGE_PERCENT = 80
  * ao app Android, que não tem cobertura mas tem código a lintar.
  */
 internal fun Project.configureDetekt() {
-    pluginManager.apply("io.gitlab.arturbosch.detekt")
+    pluginManager.apply("dev.detekt")
 
     extensions.configure<DetektExtension> {
-        buildUponDefaultConfig = true
+        buildUponDefaultConfig.set(true)
         config.setFrom(rootProject.file("detekt.yml"))
         // Sem type resolution: a task `detekt` varre todos os source sets KMP.
         source.setFrom(files("src"))
+        // Gate rígido: qualquer achado quebra o build (o antigo `maxIssues: 0`,
+        // que saiu do detekt.yml no Detekt 2).
+        failOnSeverity.set(FailOnSeverity.Info)
     }
     tasks.withType<Detekt>().configureEach {
-        jvmTarget = "17"
+        jvmTarget.set("17")
         exclude("**/build/**")
     }
 

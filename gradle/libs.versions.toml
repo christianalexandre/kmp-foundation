@@ -21,7 +21,10 @@ kotlinxSerialization = "1.10.0"
 # ViewModel multiplataforma da JetBrains (pacote androidx.lifecycle em commonMain).
 jbLifecycle = "2.10.0"
 kover = "0.9.9"
-detekt = "1.23.8"
+# Detekt 2 (groupId novo: dev.detekt). Ainda alpha, adotado de propósito: é a
+# linha construída contra Kotlin 2.3 / Gradle 9 / AGP 9 — exatamente esta stack.
+# A 1.23.8 é "estável" mas testada só até Kotlin 2.0.21 / Gradle 8.12.1.
+detekt = "2.0.0-alpha.6"
 androidx-activityCompose = "1.10.1"
 
 [libraries]
@@ -34,13 +37,14 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
-detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+# No Detekt 2 o ruleset de formatação (ktlint) chama-se ktlint-wrapper.
+detekt-formatting = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 
 # Consumidas pelo build-logic (convention plugins) como implementation.
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kover-gradle-plugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
-detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+detekt-gradle-plugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -52,7 +56,7 @@ androidApplication = { id = "com.android.application", version.ref = "agp" }
 # não mais com.android.library/application + androidTarget().
 androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 
 # Convention plugins (build-logic/): aplicar por id nos módulos —
 # id("kmpfoundation.kmp.module") e id("kmpfoundation.quality").

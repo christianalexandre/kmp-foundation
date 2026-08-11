@@ -30,32 +30,42 @@ adiado e o gatilho para pagar.
 - **Por quê adiado:** custo/benefício baixo com uma feature de exemplo.
 - **Gatilho:** segunda feature real no clone.
 
-## 4. Detekt fora da matriz de compatibilidade oficial
+## 4. Detekt em versão alpha
 
-- **O quê:** usamos Detekt **1.23.8**, que é oficialmente construído e testado
-  contra **Gradle 8.12.1 e Kotlin 2.0.21** — estamos em Gradle 9.5 e Kotlin
-  2.3.21. Na prática funciona (o `check` passa), mas não é combinação suportada.
-- **Por quê adiado:** a versão que suporta Gradle 9.x é a **2.0.0, que só existe
-  em alpha** (`2.0.0-alpha.6`, e com groupId novo: `dev.detekt`). Alpha numa
-  fundação que será clonada não se justifica enquanto a estável funciona.
-- **Sintoma a vigiar:** falsos positivos/negativos em código que usa recursos
-  novos do Kotlin, ou falha ao ler metadata 2.3 (issue detekt#8865).
-- **Custo já observável:** é a origem do aviso "Deprecated Gradle features were
-  used in this build, making it incompatible with Gradle 10" que aparece em todo
-  build — o plugin chama `ReportingExtension.file(String)`, removido no Gradle 10.
-  Verificável com `./gradlew <task> --no-configuration-cache --warning-mode fail`
-  (o configuration cache esconde avisos de configuração quando é reusado).
-  Ou seja: **o Detekt 1.23.8 é hoje o único bloqueio conhecido para o Gradle 10.**
-- **Gatilho:** primeira release estável do Detekt 2.x.
+- **O quê:** usamos Detekt **2.0.0-alpha.6** (groupId novo `dev.detekt`).
+- **Por quê assim, e não na "estável":** a estável (1.23.8) é oficialmente
+  construída e testada contra **Gradle 8.12.1 e Kotlin 2.0.21**, enquanto o
+  alpha da linha 2 é construído contra **Kotlin 2.3, Gradle 9.3 e AGP 9** — ou
+  seja, exatamente esta stack. Entre um estável desalinhado e um alpha alinhado,
+  escolhemos o alinhado: o gate de lint precisa entender a linguagem que analisa.
+  O breaking change principal da linha 2 (a troca da API K1 pela Analysis API do
+  K2) atinge quem escreve regras customizadas — nós só consumimos as embutidas.
+  Isso também removeu a última chamada deprecada que bloqueava o Gradle 10
+  (`ReportingExtension.file`, que vinha do plugin 1.23.8).
+- **Risco aceito:** sendo alpha, pode regredir entre releases. O gate é rígido
+  (`failOnSeverity = Info`), então uma regressão aparece como build vermelho, não
+  como código ruim aprovado.
+- **Gatilho:** trocar para a 2.0.0 estável quando sair; até lá, subir de alpha
+  com o `check` como rede.
 
-## 5. Ícone e tema do app Android
+## 5. Duas regras de formatação desligadas
+
+- **O quê:** `ktlint>ClassSignature` e `ktlint>FunctionSignature` estão
+  `active: false` no `detekt.yml`. Elas exigem colapsar assinaturas numa linha
+  só quando couber.
+- **Por quê:** com DI manual por construtor, parâmetros entram e saem com
+  frequência; a forma multi-linha com trailing comma mantém o diff restrito à
+  linha alterada. Foi escolha de estilo, não limitação da ferramenta.
+- **Gatilho:** revisar se o time preferir o estilo `ktlint_official` puro.
+
+## 6. Ícone e tema do app Android
 
 - **O quê:** o `androidApp` não declara `android:icon` (lint emite warning) nem
   tema próprio — usa `Theme.Material.Light.NoActionBar` do sistema.
 - **Por quê adiado:** o template não tem identidade visual; o clone terá.
 - **Gatilho:** clonagem para o app real.
 
-## 6. CI/CD
+## 7. CI/CD
 
 - **O quê:** pipeline executando `./gradlew check` + builds Android/iOS em PR.
 - **Por quê adiado:** fora do escopo desta fase por decisão do projeto.

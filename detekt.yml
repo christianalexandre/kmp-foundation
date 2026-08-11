@@ -1,10 +1,10 @@
 # Config do Detekt construída SOBRE os defaults (buildUponDefaultConfig=true no
-# QualityConventionPlugin): aqui só o que diverge deles. O ruleset `formatting`
-# (ktlint embutido) é ativado automaticamente pela dependência detekt-formatting.
-
-build:
-  # Qualquer issue falha o build — o gate é rígido por decisão.
-  maxIssues: 0
+# Quality.kt): aqui só o que diverge deles. O ruleset `ktlint` (o antigo
+# `formatting`) é ativado automaticamente pela dependência
+# dev.detekt:detekt-rules-ktlint-wrapper.
+#
+# O antigo bloco `build: maxIssues:` não existe no Detekt 2 — a rigidez do gate
+# agora é `failOnSeverity` (definido no convention plugin).
 
 naming:
   FunctionNaming:
@@ -15,10 +15,23 @@ style:
   MagicNumber:
     excludes: ['**/commonTest/**', '**/*Test.kt']
     ignorePropertyDeclaration: true
-  UnusedPrivateMember:
+  # No Detekt 2 o antigo UnusedPrivateMember virou três regras separadas.
+  UnusedPrivateFunction:
+    ignoreAnnotated: ['Composable']
+  UnusedPrivateProperty:
     ignoreAnnotated: ['Composable']
 
 complexity:
   LongParameterList:
     # Composables legitimamente recebem muitos parâmetros (state hoisting).
     ignoreAnnotated: ['Composable']
+
+ktlint:
+  # Estas duas exigem colapsar a assinatura numa linha só quando ela couber.
+  # Desligadas de propósito: com DI manual por construtor, parâmetros entram e
+  # saem com frequência, e a forma multi-linha com trailing comma mantém o diff
+  # restrito à linha que mudou. Todo o resto do ktlint segue ativo.
+  ClassSignature:
+    active: false
+  FunctionSignature:
+    active: false
