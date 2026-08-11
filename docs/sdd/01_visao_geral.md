@@ -31,5 +31,10 @@ projeto.
 - **Análise estática**: Detekt com formatting (ktlint); zero issues tolerados.
 - **Tudo local**: os gates rodam em `./gradlew check`, sem depender de CI.
   (CI/CD é etapa futura; ver `docs/tech-debt.md`.)
+- **Versão do AGP é acoplada à versão do Android Studio.** Cada release do
+  Studio suporta uma faixa de AGP; subir o AGP além dela quebra o sync do IDE
+  ainda que a build por terminal passe. Ao mexer no AGP, consultar a matriz de
+  compatibilidade e registrar o requisito no README (hoje: Quail 3 / 2026.1.3
+  para o AGP 9.3).
 - **Documentação viva**: decisões passam por RFC → ADR e o SDD reflete o estado
   atual (processo em `docs/README.md`).

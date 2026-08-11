@@ -15,6 +15,17 @@ arquitetura por feature já configurados.
 | Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), DI manual + ViewModel multiplataforma |
 | Exemplo | `features/welcome/` demonstra o padrão completo com testes usando Fakes |
 
+## Pré-requisitos
+
+| Ferramenta | Versão | Por quê |
+| --- | --- | --- |
+| **Android Studio** | **Quail 3 (2026.1.3) ou mais recente** | Cada versão do Studio suporta uma faixa de AGP: Quail 2/3 (2026.1.2+) são as que aceitam **AGP 9.3**. Panda 3 (2025.3.3) vai só até o AGP 9.1 — nele o sync falha com erros de índice (ex.: *"Failed to build cache for …klib"*), mesmo com a build por terminal verde. Confira a [matriz oficial](https://developer.android.com/build/releases/about-agp) antes de mudar o AGP. |
+| JDK | 17+ | Exigido pelo AGP 9. |
+| XcodeGen | qualquer | `brew install xcodegen`, só para gerar o projeto iOS. |
+
+> A build por linha de comando não depende do Android Studio — o wrapper do
+> Gradle resolve tudo. O requisito acima é para trabalhar dentro do IDE.
+
 ## Módulos
 
 | Módulo | Papel |
