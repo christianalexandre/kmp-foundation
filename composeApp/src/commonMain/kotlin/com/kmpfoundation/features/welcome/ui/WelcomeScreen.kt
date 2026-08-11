@@ -8,19 +8,19 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmpfoundation.features.welcome.presentation.WelcomeUiState
 import com.kmpfoundation.features.welcome.presentation.WelcomeViewModel
 
 @Composable
 fun WelcomeScreen(viewModel: WelcomeViewModel) {
-    val state by viewModel.state.collectAsState()
-    LaunchedEffect(viewModel) { viewModel.load() }
+    // `WithLifecycle` e não `collectAsState`: sem isso a tela segue coletando
+    // com o app em background. A carga inicial é do ViewModel, não daqui.
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),

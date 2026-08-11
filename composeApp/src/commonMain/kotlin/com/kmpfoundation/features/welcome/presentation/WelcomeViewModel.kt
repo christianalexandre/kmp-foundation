@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kmpfoundation.core.result.AppError
 import com.kmpfoundation.core.result.Outcome
 import com.kmpfoundation.features.welcome.domain.GetWelcomeMessageUseCase
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,9 +23,21 @@ class WelcomeViewModel(
     private val _state = MutableStateFlow<WelcomeUiState>(WelcomeUiState.Loading)
     val state: StateFlow<WelcomeUiState> = _state.asStateFlow()
 
+    private var loadJob: Job? = null
+
+    // A carga inicial nasce AQUI, e não num LaunchedEffect da tela: o ViewModel
+    // sobrevive à recriação da Activity, a composição não. Disparar pela tela
+    // refaria a busca a cada rotação.
+    init {
+        load()
+    }
+
     fun load() {
+        // Toques repetidos em "tentar de novo" não empilham buscas concorrentes:
+        // quem estiver em voo já está refletido no estado de Loading.
+        if (loadJob?.isActive == true) return
         _state.value = WelcomeUiState.Loading
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             _state.value = when (val outcome = getWelcomeMessage()) {
                 is Outcome.Success -> WelcomeUiState.Content(outcome.value.text)
                 is Outcome.Failure -> outcome.error.toUiState()

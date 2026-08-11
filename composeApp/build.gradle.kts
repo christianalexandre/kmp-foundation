@@ -30,6 +30,7 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.lifecycle.runtime.compose)
             implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {

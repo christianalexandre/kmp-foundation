@@ -39,7 +39,6 @@ class WelcomeGraphTest {
         val graph = WelcomeGraph(messageRepository = repository)
 
         val viewModel = graph.viewModel()
-        viewModel.load()
         advanceUntilIdle()
 
         assertEquals(WelcomeUiState.Content("hello from tests"), viewModel.state.value)
@@ -51,7 +50,6 @@ class WelcomeGraphTest {
         val graph = WelcomeGraph(FakeGreetingEngine(greeting = "hello from fake"))
 
         val viewModel = graph.viewModel()
-        viewModel.load()
         advanceUntilIdle()
 
         assertEquals(WelcomeUiState.Content("hello from fake"), viewModel.state.value)

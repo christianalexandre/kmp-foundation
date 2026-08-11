@@ -40,20 +40,45 @@ class WelcomeViewModelTest {
     }
 
     @Test
-    fun loadEmitsContentWithMessageFromUseCase() = runTest(dispatcher) {
-        val viewModel = viewModel(Outcome.Success(WelcomeMessage("welcome")))
+    fun loadsOnCreationWithoutTheScreenAskingForIt() = runTest(dispatcher) {
+        val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("welcome")))
+
+        val viewModel = WelcomeViewModel(GetWelcomeMessageUseCase(repository))
+        advanceUntilIdle()
+
+        assertEquals(WelcomeUiState.Content("welcome"), viewModel.state.value)
+        assertEquals(1, repository.callCount)
+    }
+
+    @Test
+    fun retryWhileALoadIsInFlightIsIgnored() = runTest(dispatcher) {
+        val repository = FakeMessageRepository()
+        val viewModel = WelcomeViewModel(GetWelcomeMessageUseCase(repository))
+
+        // The load started by `init` has not run yet on the test dispatcher.
+        viewModel.load()
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.callCount)
+    }
+
+    @Test
+    fun retryAfterAFinishedLoadRunsAgain() = runTest(dispatcher) {
+        val repository = FakeMessageRepository()
+        val viewModel = WelcomeViewModel(GetWelcomeMessageUseCase(repository))
+        advanceUntilIdle()
 
         viewModel.load()
         advanceUntilIdle()
 
-        assertEquals(WelcomeUiState.Content("welcome"), viewModel.state.value)
+        assertEquals(2, repository.callCount)
     }
 
     @Test
     fun connectivityFailureOffersRetry() = runTest(dispatcher) {
         val viewModel = viewModel(Outcome.Failure(AppError.Connectivity))
 
-        viewModel.load()
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -64,7 +89,6 @@ class WelcomeViewModelTest {
     fun platformFailureDoesNotOfferRetry() = runTest(dispatcher) {
         val viewModel = viewModel(Outcome.Failure(AppError.Platform("no bluetooth")))
 
-        viewModel.load()
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -83,7 +107,6 @@ class WelcomeViewModelTest {
 
         val messages = errors.map { error ->
             val viewModel = viewModel(Outcome.Failure(error))
-            viewModel.load()
             advanceUntilIdle()
             (viewModel.state.value as WelcomeUiState.Error).message
         }
