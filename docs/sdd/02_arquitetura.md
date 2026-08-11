@@ -5,8 +5,8 @@
 | Módulo | Plugin Android | Papel |
 | --- | --- | --- |
 | `composeApp` | `com.android.kotlin.multiplatform.library` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
-| `androidApp` | `com.android.application` | Casca Android: `MainActivity` + manifesto. Sem lógica. |
-| `iosApp` | — (XcodeGen) | Casca iOS: entry SwiftUI que hospeda o `MainViewController`. |
+| `androidApp` | `com.android.application` | Casca Android: `Application` (dona do composition root) + `MainActivity` + manifesto. Sem lógica. |
+| `iosApp` | — (XcodeGen) | Casca iOS: `iOSApp` (dona do composition root) + engines nativas em Swift + a view que hospeda o `MainViewController`. |
 
 A separação entre `composeApp` e `androidApp` **é exigência do AGP 9**: um
 módulo KMP não pode mais ser `com.android.application`, e o entry point Android
@@ -63,8 +63,20 @@ Regras que decorrem disso:
   pertence ao `viewModel { }` da UI (ViewModelStore da plataforma). Guardar a
   instância no grafo vazaria estado entre telas.
 - Dependências entram por **construtor**; defaults de produção, Fakes nos testes.
-- Dependências de plataforma (engines nativas, players) são criadas em
-  `MainActivity`/`MainViewController` e injetadas no `AppGraph`.
+
+### Escopos (quem vive quanto tempo) — ADR 0003
+
+O template tem **dois escopos explícitos**, e a distinção é deliberada:
+
+| Escopo | Dono | O que vive nele |
+| --- | --- | --- |
+| Aplicação | `KmpFoundationApplication` (Android) / `iOSApp` (iOS) | O `AppGraph` e tudo que ele segura: cliente HTTP, banco, cache, engines/SDKs nativos. Uma vez por processo. |
+| Tela | `viewModel { }` (ViewModelStore da plataforma) | ViewModels e o estado da tela. |
+
+As dependências de plataforma são construídas pela casca, **junto do grafo** —
+não na `Activity`/`ContentView`. Construir o `AppGraph` em algo que a plataforma
+possa recriar (Activity, composable, `ContentView`) é proibido: reconstruiria
+conexões e sessões a cada rotação.
 
 ## Camada de apresentação: ViewModel multiplataforma
 
@@ -73,9 +85,15 @@ mesmo pacote `androidx.lifecycle` em `commonMain`) com `viewModelScope`:
 
 - No Android, sobrevive à recriação da Activity; com navegação, fica escopado
   ao destino (motivo de tê-lo adotado já na POC).
-- **Divisão de papéis com o DI manual**: o `AppGraph` monta o objeto (factory
-  `welcomeViewModel()`), a UI o registra no ciclo de vida com
-  `viewModel { graph.welcomeViewModel() }` — o grafo nunca guarda ViewModel.
+- **Divisão de papéis com o DI manual**: o grafo da feature monta o objeto
+  (factory `WelcomeGraph.viewModel()`), a UI o registra no ciclo de vida com
+  `viewModel { graph.welcome.viewModel() }` — o grafo nunca guarda ViewModel.
+- **A carga inicial nasce no `init` do ViewModel**, não num `LaunchedEffect` da
+  tela. O ViewModel sobrevive à recriação da Activity, a composição não:
+  disparar pela tela refaz a busca a cada rotação. Pelo mesmo motivo, `load()`
+  ignora chamadas enquanto já há uma em voo (retry não empilha buscas).
+- A tela coleta com **`collectAsStateWithLifecycle`**, não `collectAsState`:
+  sem isso a coleta continua com o app em background.
 - Nos testes, `Dispatchers.setMain(StandardTestDispatcher())` substitui o Main
   do `viewModelScope` (ver `WelcomeViewModelTest`); segue sem mocks, só Fakes.
 
@@ -101,30 +119,31 @@ Objective-C. O padrão, como está em `core/platform/GreetingEngine.kt`:
 ```kotlin
 interface SomeEngine {
     val isAvailable: Boolean
-    fun start(request: Request, callback: Callback)   // callback explícito
-    fun cancel()
+    fun start(request: Request, callback: Callback): Cancellable  // handle POR CHAMADA
 }
+interface Cancellable { fun cancel() }
+
 suspend fun SomeEngine.execute(request: Request): Outcome<T> =  // adapter p/ Kotlin
-    suspendCancellableCoroutine { /* callback → continuation; cancel() no cancel */ }
+    suspendCancellableCoroutine { /* callback → continuation; handle.cancel() no cancel */ }
 ```
+
+O cancelamento é **por chamada, nunca da engine** — ADR 0004. A engine é
+compartilhada (vive no escopo de aplicação), então um `cancel()` nela teria
+semântica errada: cancelaria as chamadas dos outros. Corolário obrigatório:
+**a engine não guarda estado de chamada**; quem guarda é o handle.
 
 O Swift conforma direto ao protocolo exportado no framework
 (`iosApp/iosApp/GreetingEngine.swift`); o lado Kotlin usa o adapter `suspend`,
-que também liga o cancelamento da coroutine ao `cancel()` da engine.
+que amarra o handle daquela chamada ao ciclo de vida da coroutine.
 
-**Quem constrói a engine é a casca da plataforma** (`MainActivity` /
-`MainViewController`), que a injeta no `AppGraph` — só ela conhece o SDK.
-Em `commonTest`, um Fake da engine permite testar toda a lógica dependente de
-plataforma sem device nem simulador.
+**Quem constrói a engine é a casca da plataforma**
+(`KmpFoundationApplication` / `iOSApp`), que a injeta no `AppGraph` — só ela
+conhece o SDK. Em `commonTest`, um Fake da engine permite testar toda a lógica
+dependente de plataforma sem device nem simulador, inclusive o comportamento
+sob chamadas concorrentes.
 
 O caso simples da fronteira (dado sem callback nem ciclo de vida) usa
 `expect/actual` direto: ver `core/platform/Platform.kt`.
-
-### Navegação: pilha única, bottom bar só na raiz
-
-`Navigator` mantém `List<Route>`; a aba selecionada é parâmetro da rota raiz.
-A tab bar é desenhada em Compose na tela raiz — o iOS usa `UINavigationController`
-puro, sem `UITabBarController`. Navegar para frente empilha e esconde a barra.
 
 ### Ilhas nativas
 
@@ -150,6 +169,10 @@ O template nasce com um módulo por simplicidade, mas preparado para dividir:
 | Gate | Ferramenta | Regra | Onde |
 | --- | --- | --- | --- |
 | Cobertura | Kover | ≥ 80% de linha; `*.ui.*` e entry points fora da medição | `QualityConventionPlugin` |
-| Estática/formato | Detekt (+formatting) | zero issues (`maxIssues: 0`) | `detekt.yml` raiz |
+| Estática/formato (Kotlin) | Detekt (+ktlint) | zero issues (`failOnSeverity = Info`) | `Quality.kt` + `detekt.yml` raiz |
+| Estática/formato (Swift) | SwiftLint | zero issues (`--strict`) | `.swiftlint.yml` raiz |
 
-Ambos falham `./gradlew check` localmente.
+Kover e Detekt falham `./gradlew check` localmente — inclusive sobre os
+convention plugins em `build-logic/`, que o `check` da raiz alcança pela
+included build. O SwiftLint roda fora do Gradle (`make lint` / `make check` e o
+pre-commit), porque o código Swift não passa pelo build do Gradle.

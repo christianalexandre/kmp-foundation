@@ -2,11 +2,14 @@
 
 ## Formatação e análise estática
 
-- **Detekt** com o ruleset **formatting** (ktlint embutido) é a fonte única de
-  verdade de estilo. Config: `detekt.yml` na raiz, construída sobre os defaults
-  (`buildUponDefaultConfig`). `maxIssues: 0` — qualquer issue falha o build.
-- Roda em `./gradlew check` (via `QualityConventionPlugin`); para só o lint:
-  `./gradlew detekt`.
+- **Detekt** com o ruleset **ktlint** embutido é a fonte única de verdade de
+  estilo no Kotlin. Config: `detekt.yml` na raiz, construída sobre os defaults
+  (`buildUponDefaultConfig`). O gate é `failOnSeverity = Info` — qualquer issue
+  falha o build. (O antigo bloco `build: maxIssues:` não existe no Detekt 2.)
+- Roda em `./gradlew check` (via `QualityConventionPlugin`), inclusive sobre os
+  convention plugins em `build-logic/`; para só o lint: `./gradlew detekt`.
+- **SwiftLint** faz o mesmo papel no código Swift (`.swiftlint.yml` na raiz,
+  modo `--strict`). Não passa pelo Gradle: roda em `make lint` e no pre-commit.
 - `.editorconfig` na raiz mantém IDE e ktlint alinhados (4 espaços, linha de 120).
 - Exceções pontuais usam `@Suppress` **com justificativa no código**; exceções
   recorrentes viram regra no `detekt.yml` via PR.
@@ -45,7 +48,7 @@ não estão documentadas em nenhum outro lugar do repositório.
   implementação, quebram em refactors seguros e não existem em Kotlin/Native.
 - Testes vivem em `commonTest` sempre que a lógica é comum — rodam em JVM e iOS.
 - Estrutura: Arrange / Act / Assert, nomes em camelCase descrevendo o
-  comportamento (`loadEmiteContentComAMensagemDoUseCase`).
+  comportamento (`loadsOnCreationWithoutTheScreenAskingForIt`).
 - **Cobertura ≥ 80% de linha** (Kover, gate local). O que conta: `domain`,
   `data`, `presentation`, `core` (exceto `core/ui`). O que não conta: `*.ui.*`
   e entry points de plataforma.
@@ -64,8 +67,29 @@ não estão documentadas em nenhum outro lugar do repositório.
   features virarem módulos.
 - Cada feature monta a si mesma em `features/<nome>/di/<Nome>Graph.kt`.
   **ViewModel é factory, nunca instância guardada no grafo** (ADR 0001).
+- **O `AppGraph` é construído pela casca da aplicação** (`Application` /
+  `iOSApp`), nunca por uma Activity, composable ou `ContentView` — o que a
+  plataforma pode recriar não pode ser dono do composition root (ADR 0003).
 - `domain` é Kotlin puro; `data` implementa as portas do domain; `ui` só
   consome `presentation`. Detalhes no SDD 02.
+
+## Telas (padrão que toda feature copia)
+
+- **Carga inicial no `init` do ViewModel**, não em `LaunchedEffect`: o ViewModel
+  sobrevive à recriação da Activity, a composição não — disparar pela tela
+  refaz a busca a cada rotação.
+- Ação que dispara trabalho **ignora reentrância** enquanto há uma execução em
+  voo (`if (job?.isActive == true) return`); o estado de Loading já comunica.
+- Colete com **`collectAsStateWithLifecycle`**, não `collectAsState`.
+
+## Fronteira nativa
+
+- Interface exportada para o Swift: sem `suspend`, sem `sealed`/genérico na
+  assinatura, callback explícito.
+- **Cancelamento é por chamada** — `start(...)` devolve um `Cancellable`. Engine
+  com `cancel()` global, ou guardando "a chamada atual" num campo, é defeito de
+  review: cancela a chamada dos outros (ADR 0004).
+- O Kotlin nunca chama a interface direto — sempre pelo adapter `suspend`.
 
 ## Branches e commits
 

@@ -10,7 +10,7 @@ arquitetura por feature já configurados.
 | Área | O quê |
 | --- | --- |
 | Documentação | `docs/` com RFC, ADR, SDD e guidelines (ciclo de vida em `docs/README.md`) |
-| Quality gates | Kover (cobertura de linha ≥ 80%) + Detekt (com formatting/ktlint), ambos em `./gradlew check` |
+| Quality gates | Kover (cobertura ≥ 80%) + Detekt/ktlint (código **e** convention plugins) em `./gradlew check`; SwiftLint no código Swift |
 | Build | AGP 9 + Gradle 9.5, Version Catalog (`gradle/libs.versions.toml`) e convention plugins em `build-logic/` |
 | Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), DI manual + ViewModel multiplataforma |
 | Exemplo | `features/welcome/` demonstra o padrão completo com testes usando Fakes |
@@ -22,6 +22,7 @@ arquitetura por feature já configurados.
 | **Android Studio** | **Quail 3 (2026.1.3) ou mais recente** | Cada versão do Studio suporta uma faixa de AGP: Quail 2/3 (2026.1.2+) são as que aceitam **AGP 9.3**. Panda 3 (2025.3.3) vai só até o AGP 9.1 — nele o sync falha com erros de índice (ex.: *"Failed to build cache for …klib"*), mesmo com a build por terminal verde. Confira a [matriz oficial](https://developer.android.com/build/releases/about-agp) antes de mudar o AGP. |
 | JDK | 17+ | Exigido pelo AGP 9. |
 | XcodeGen | qualquer | `brew install xcodegen`, só para gerar o projeto iOS. |
+| SwiftLint | qualquer | Gate do código Swift. Vem no `make bootstrap` (Brewfile). |
 
 > A build por linha de comando não depende do Android Studio — o wrapper do
 > Gradle resolve tudo. O requisito acima é para trabalhar dentro do IDE.
@@ -40,18 +41,19 @@ Tudo passa pelo `make` — rode `make` (ou `make help`) para a lista completa.
 
 ```sh
 make bootstrap    # instala ferramentas, instala os git hooks e gera o projeto iOS
-make check        # gate completo: testes (JVM + iOS) + cobertura + detekt + lint
+make check        # gate completo: testes (JVM + iOS) + cobertura + detekt + swiftlint
 make test         # só os testes multiplataforma
-make lint         # análise estática        | make format  para autocorrigir
+make lint         # análise estática (Kotlin + Swift) | make format  para autocorrigir
 make coverage     # verifica o gate de 80% e abre o relatório HTML
 make android-run  # instala e abre no device/emulador Android
 make ios-run      # compila, instala e abre no simulador iOS
 ```
 
 O `make bootstrap` instala os hooks do [lefthook](https://lefthook.dev):
-`detekt` no pre-commit (<1s), validação da mensagem no commit-msg (Conventional
-Commits, sem trailer `Co-Authored-By`) e os testes das **duas plataformas** no
-pre-push (~6s) — o mesmo `commonTest` pode passar na JVM e falhar no iOS.
+`detekt` + `swiftlint` no pre-commit (<1s), validação da mensagem no commit-msg
+(Conventional Commits, sem trailer `Co-Authored-By`) e os testes das **duas
+plataformas** no pre-push (~6s) — o mesmo `commonTest` pode passar na JVM e
+falhar no iOS.
 
 O **gate de cobertura não roda nos hooks** de propósito: ele bloquearia o push
 de trabalho em andamento (branch de backup, PR em draft, spike). Cobertura e
@@ -61,8 +63,9 @@ o gate inteiro localmente.
 ## Checklist de clonagem (transformar o template em app real)
 
 1. Clonar/copiar este repositório e trocar `rootProject.name` em `settings.gradle.kts`.
-2. Renomear o pacote `com.kmpfoundation` — código (`commonMain`/`iosMain` e o
-   `MainActivity` do `androidApp`), o `namespace` de cada módulo, o `applicationId`
+2. Renomear o pacote `com.kmpfoundation` — código (`commonMain`/`iosMain`, o
+   `MainActivity` e a `KmpFoundationApplication` do `androidApp`, incluindo o
+   `android:name` no manifesto), o `namespace` de cada módulo, o `applicationId`
    em `androidApp/build.gradle.kts` e os filtros de cobertura em
    `build-logic/.../Quality.kt`.
 3. Atualizar `iosApp/project.yml` (`bundleIdPrefix`, `PRODUCT_BUNDLE_IDENTIFIER`,
@@ -79,5 +82,9 @@ o gate inteiro localmente.
   passa pelo grafo de DI/navegação.
 - Só `di/` conhece features; `core/` nunca (senão vira ciclo ao modularizar).
   Cada feature monta a si mesma em `features/<nome>/di/` — ver ADR 0001.
+- O `AppGraph` é construído pela casca da **aplicação** (`Application` / `iOSApp`),
+  nunca por uma Activity ou tela — ver ADR 0003.
+- Engine nativa devolve um `Cancellable` **por chamada** e não guarda estado de
+  chamada — ver ADR 0004.
 
 Detalhes em `docs/guidelines/01_style_guide.md` e `docs/sdd/02_arquitetura.md`.
