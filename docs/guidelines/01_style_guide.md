@@ -42,6 +42,6 @@
   `feat/APP-123-netconfig-ble`, `fix/APP-456-token-refresh`.
   Tipos: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`.
 - Commits: **Conventional Commits** — `tipo(escopo): descrição no imperativo`.
-  Ex.: `feat(welcome): adiciona state holder com loading`.
+  Ex.: `feat(welcome): adiciona estado de loading na tela inicial`.
   O corpo explica o *porquê* quando não for óbvio; o diff já mostra o *o quê*.
 - PR pequeno e focado; descrição aponta RFC/ADR quando a mudança decorre de um.

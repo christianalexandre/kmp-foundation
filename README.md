@@ -35,9 +35,10 @@ cd iosApp && xcodegen                                  # gera o .xcodeproj (requ
 ## Checklist de clonagem (transformar o template em app real)
 
 1. Clonar/copiar este repositório e trocar `rootProject.name` em `settings.gradle.kts`.
-2. Renomear o pacote `com.kmpfoundation` (commonMain/androidMain/iosMain, `namespace`
-   e `applicationId` no `composeApp/build.gradle.kts`, filtros de cobertura no
-   `build-logic/.../QualityConventionPlugin.kt`).
+2. Renomear o pacote `com.kmpfoundation` — código (`commonMain`/`iosMain` e o
+   `MainActivity` do `androidApp`), o `namespace` de cada módulo, o `applicationId`
+   em `androidApp/build.gradle.kts` e os filtros de cobertura em
+   `build-logic/.../Quality.kt`.
 3. Atualizar `iosApp/project.yml` (`bundleIdPrefix`, `PRODUCT_BUNDLE_IDENTIFIER`,
    `CFBundleDisplayName`) e rodar `xcodegen`.
 4. **Deletar `features/welcome/`** (e seus testes) — é só exemplo do padrão.
