@@ -126,11 +126,16 @@ interface SomeEngine {
     val isAvailable: Boolean
     fun start(request: Request, callback: Callback): Cancellable  // handle POR CHAMADA
 }
-interface Cancellable { fun cancel() }
 
 suspend fun SomeEngine.execute(request: Request): Outcome<T> =  // adapter p/ Kotlin
     suspendCancellableCoroutine { /* callback → continuation; handle.cancel() no cancel */ }
 ```
+
+`Cancellable` e o helper `CallHandle` vivem em `core/platform/Cancellable.kt` —
+genéricos, separados da engine de exemplo. A implementação devolve
+`CallHandle { /* para o recurso */ }`, ou `NoOpCancellable` quando não há o que
+parar. **Quando o padrão se aplica** (e quando `expect/actual` basta) está no
+SDD 03; a evidência por trás da escolha, no ADR 0006.
 
 O cancelamento é **por chamada, nunca da engine** — ADR 0004. A engine é
 compartilhada (vive no escopo de aplicação), então um `cancel()` nela teria

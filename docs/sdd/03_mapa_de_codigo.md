@@ -67,14 +67,46 @@ flowchart TD
     q5 -->|Nao| feat["composeApp/commonMain/features/nome/"]
     q5 -->|Sim| core["composeApp/commonMain/core/"]
 
-    q1 -->|Sim| q2{"E SDK nativo assincrono?"}
+    q1 -->|Sim| q2{"O resultado e assincrono?"}
 
-    q2 -->|"Nao: dado simples e sincrono"| ea["expect em commonMain/core/platform<br/>+ actual em androidMain e iosMain"]
+    q2 -->|"Nao: sincrono, sem ciclo de vida"| ea["expect em commonMain/core/platform<br/>+ actual em androidMain e iosMain"]
 
-    q2 -->|Sim| contrato["Contrato em commonMain/core/platform<br/>interface + callback + Cancellable"]
-    contrato --> impl["Implementacao NA CASCA<br/>androidApp em Kotlin, iosApp em Swift"]
+    q2 -->|Sim| contrato["Contrato em commonMain/core/platform<br/>interface + callback"]
+    contrato --> q3{"O trabalho nativo continua<br/>consumindo algo se ninguem parar?"}
+    q3 -->|Sim| handle["Devolve CallHandle<br/>que para o recurso"]
+    q3 -->|Nao| noop["Devolve NoOpCancellable"]
+    handle --> impl["Implementacao NA CASCA<br/>androidApp em Kotlin, iosApp em Swift"]
+    noop --> impl
     impl --> injeta["A casca constroi e injeta no AppGraph"]
 ```
+
+### Quando o padrão de engine se aplica — e quando não
+
+O padrão tem **dois critérios independentes**, e confundi-los é o que faz ele
+parecer pesado:
+
+1. **Interface + callback** — necessário quando o resultado é **assíncrono**.
+   Não é escolha: o Swift não consegue implementar uma função `suspend` do
+   Kotlin, então o contrato tem de ser callback (ADR 0006).
+2. **`Cancellable` de verdade** — necessário quando o trabalho nativo
+   **continua consumindo algo** se ninguém o parar: rádio ligado, câmera aberta,
+   sessão de SDK viva, requisição em voo, timer rodando.
+
+O segundo critério é o que decide se há trabalho real a fazer. Sem ele, o
+handle existe só para o contrato ficar uniforme — e aí é `NoOpCancellable`.
+
+| Cenário | Precisa de engine? | Cancelamento carrega peso? |
+| --- | --- | --- |
+| Versão do SO, locale, nome do aparelho | Não — `expect/actual` | — |
+| Scan BLE de netconfig | Sim | **Sim** — sem `cancel`, o rádio segue varrendo depois que o usuário sai |
+| Preview/stream de câmera | Sim | **Sim** — sessão de vídeo aberta |
+| Leitura de QR code | Sim | **Sim** — câmera aberta |
+| Consulta de status via SDK (rede) | Sim | **Sim** — requisição em voo |
+| Valor já em cache do SDK, devolvido por callback | Sim | Não — `NoOpCancellable` |
+
+O caso da `GreetingEngine` do template é o penúltimo tipo: assíncrona, mas sem
+recurso para desligar. Ela usa `CallHandle` mesmo assim porque é **exemplo do
+formato** — não porque a saudação precise ser cancelada.
 
 Em forma de tabela, para consulta rápida:
 

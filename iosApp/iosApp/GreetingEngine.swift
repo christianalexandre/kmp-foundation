@@ -12,18 +12,6 @@ final class SwiftGreetingEngine: NSObject, GreetingEngine {
         }
         DispatchQueue.main.async(execute: work)
         // O handle retém o work item; a engine não guarda estado de chamada (ADR 0004).
-        return WorkItemCancellable(work: work)
-    }
-}
-
-private final class WorkItemCancellable: NSObject, Cancellable {
-    private let work: DispatchWorkItem
-
-    init(work: DispatchWorkItem) {
-        self.work = work
-    }
-
-    func cancel() {
-        work.cancel()
+        return CallHandle(onCancel: { work.cancel() })
     }
 }

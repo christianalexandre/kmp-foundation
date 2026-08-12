@@ -16,11 +16,6 @@ interface GreetingEngine {
     fun greet(name: String, callback: GreetingCallback): Cancellable
 }
 
-/** Handle de UMA chamada em andamento. */
-interface Cancellable {
-    fun cancel()
-}
-
 interface GreetingCallback {
     fun onResult(greeting: String?, errorMessage: String?)
 }
