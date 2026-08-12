@@ -111,3 +111,21 @@ adiado e o gatilho para pagar.
   não é só conveniência — é o que devolve um gate que o projeto já tinha.
 - **Gatilho:** repositório compartilhado com mais de um contribuidor ativo, ou
   antes disso se o gate de cobertura começar a ser violado sem ninguém notar.
+
+## 9. As implementações de engine nativa estão fora de qualquer gate
+
+- **O quê:** `AndroidGreetingEngine` (Kotlin, em `androidApp/`) e
+  `SwiftGreetingEngine` (Swift, em `iosApp/`) não têm teste. O contrato e o
+  adapter são cobertos em `commonTest` pelo `FakeGreetingEngine`, mas as duas
+  implementações reais, não.
+- **Piorou em 2026-08-12** ao mover a engine Android para a casca (SDD 03): a
+  decisão de arquitetura está certa, mas o efeito colateral é que as duas
+  implementações passaram a viver em módulos **sem medição de cobertura**. O
+  Kover marcar 100% hoje diz respeito ao módulo compartilhado, não ao app.
+- **Por quê adiado:** exige escolher e montar duas ferramentas novas —
+  Robolectric (ou teste instrumentado) para o `androidApp` e XCTest para o
+  `iosApp` — e o template não tem engine real para justificar o custo.
+- **Risco aceito:** um defeito na engine só aparece rodando o app. Mitigado em
+  parte porque a engine é fina por contrato (ADR 0004: sem estado de chamada).
+- **Gatilho:** primeira engine real no clone (Imou/Tuya). Aí a implementação
+  deixa de ser trivial e o teste passa a valer mais que o custo do setup.
