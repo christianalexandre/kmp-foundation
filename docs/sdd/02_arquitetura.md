@@ -5,7 +5,7 @@
 | Módulo | Plugin Android | Papel |
 | --- | --- | --- |
 | `composeApp` | `com.android.kotlin.multiplatform.library` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
-| `androidApp` | `com.android.application` | Casca Android: `Application` (dona do composition root) + `MainActivity` + manifesto. Sem lógica. |
+| `androidApp` | `com.android.application` | Casca Android: `Application` (dona do composition root), `MainActivity`, engines nativas em Kotlin e manifesto. Sem lógica de negócio. |
 | `iosApp` | — (XcodeGen) | Casca iOS: `iOSApp` (dona do composition root) + engines nativas em Swift + a view que hospeda o `MainViewController`. |
 
 A separação entre `composeApp` e `androidApp` **é exigência do AGP 9**: um
@@ -13,25 +13,27 @@ módulo KMP não pode mais ser `com.android.application`, e o entry point Androi
 precisa de um módulo próprio. O efeito colateral é bom — as duas cascas
 (Android e iOS) ficam simétricas em volta do mesmo núcleo compartilhado.
 
+Os pares corretos, que confundem com frequência (`androidMain` **não** é par de
+`iosApp`):
+
+| Papel | Android | iOS |
+| --- | --- | --- |
+| Source set do módulo compartilhado | `composeApp/androidMain` | `composeApp/iosMain` |
+| Módulo de app (casca) | `androidApp/` | `iosApp/` |
+
+`androidMain`/`iosMain` guardam **apenas** os `actual` de `expect/actual` e
+código compartilhado que precise de API de plataforma. Implementações de engine
+nativa vivem na **casca** — ver "Fronteira KMP ↔ nativo" abaixo.
+
+> O mapa completo de "onde ponho isto?", com diagramas e tabela de consulta,
+> está no **SDD 03 — Mapa de código**.
+
 ## Organização: package-by-feature
 
-Dentro do `composeApp`, organização por **feature**, não por camada:
-
-```
-com/kmpfoundation/
-├── di/AppGraph.kt         # composition root: o topo, único que conhece features
-├── core/                  # transversal; depois navigation, design system, network
-│   ├── platform/          # fronteira nativa: expect/actual e engines (ver abaixo)
-│   ├── result/            # Outcome + AppError (ADR 0002)
-│   └── ui/App.kt          # raiz Compose (tema + casca de navegação)
-└── features/
-    └── welcome/           # feature-exemplo (deletar no clone)
-        ├── domain/        # entidades e portas (interfaces) — Kotlin puro, sem use cases
-        ├── data/          # implementações das portas (HTTP, banco, SDK nativo)
-        ├── presentation/  # ViewModels: TODA a lógica de apresentação
-        ├── ui/            # composables: casca fina sobre o ViewModel
-        └── di/            # grafo da feature: monta as próprias dependências
-```
+Dentro do `composeApp`, organização por **feature**, não por camada: `di/`
+(composition root), `core/` (transversal) e `features/<nome>/` com as camadas
+`domain`, `data`, `presentation`, `ui` e `di`. A estrutura desenhada e a tabela
+de "o que vai onde" estão no **SDD 03 — Mapa de código**.
 
 **Regras de dependência** (verificadas em review; enforcement automático é
 dívida registrada):
@@ -139,11 +141,18 @@ O Swift conforma direto ao protocolo exportado no framework
 (`iosApp/iosApp/GreetingEngine.swift`); o lado Kotlin usa o adapter `suspend`,
 que amarra o handle daquela chamada ao ciclo de vida da coroutine.
 
-**Quem constrói a engine é a casca da plataforma**
-(`KmpFoundationApplication` / `iOSApp`), que a injeta no `AppGraph` — só ela
-conhece o SDK. Em `commonTest`, um Fake da engine permite testar toda a lógica
-dependente de plataforma sem device nem simulador, inclusive o comportamento
-sob chamadas concorrentes.
+**A engine é implementada E construída na casca da plataforma** — Kotlin em
+`androidApp/`, Swift em `iosApp/` — e injetada no `AppGraph`. O módulo
+compartilhado declara o contrato e nunca vê a implementação. Três razões:
+
+1. **Simetria.** No iOS não há escolha (Swift só existe no projeto Xcode); pôr o
+   Android em `androidMain` criaria uma assimetria sem ganho.
+2. **A dependência do SDK vendor fica na casca**, fora do módulo que também
+   gera o framework iOS.
+3. **Implementação junto de quem a constrói** (ADR 0003).
+
+Em `commonTest`, um Fake da engine permite testar toda a lógica dependente de
+plataforma sem device nem simulador, inclusive sob chamadas concorrentes.
 
 ### Qual dos dois mecanismos usar
 

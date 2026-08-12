@@ -12,7 +12,7 @@ arquitetura por feature já configurados.
 | Documentação | `docs/` com RFC, ADR, SDD e guidelines (ciclo de vida em `docs/README.md`) |
 | Quality gates | Kover (cobertura ≥ 80%) + Detekt/ktlint (código **e** convention plugins) em `./gradlew check`; SwiftLint no código Swift |
 | Build | AGP 9 + Gradle 9.5, Version Catalog (`gradle/libs.versions.toml`) e convention plugins em `build-logic/` |
-| Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), DI manual + ViewModel multiplataforma |
+| Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), MVVM sem use case, DI manual + ViewModel multiplataforma. Mapa em `docs/sdd/03_mapa_de_codigo.md` |
 | Exemplo | `features/welcome/` demonstra o padrão completo com testes usando Fakes |
 
 ## Pré-requisitos
@@ -32,8 +32,12 @@ arquitetura por feature já configurados.
 | Módulo | Papel |
 | --- | --- |
 | `composeApp` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
-| `androidApp` | Casca Android (`MainActivity`). Sem lógica — o AGP 9 exige que o app seja um módulo separado do módulo KMP. |
-| `iosApp` | Casca iOS (SwiftUI + XcodeGen). |
+| `androidApp` | Casca Android: `Application`, `MainActivity` e engines nativas em Kotlin. Sem lógica de negócio — o AGP 9 exige que o app seja um módulo separado do módulo KMP. |
+| `iosApp` | Casca iOS: SwiftUI + XcodeGen e engines nativas em Swift. |
+
+> `androidMain` é par de `iosMain` (source sets do módulo compartilhado), **não**
+> de `iosApp`. O mapa completo de onde cada coisa fica está em
+> [`docs/sdd/03_mapa_de_codigo.md`](docs/sdd/03_mapa_de_codigo.md).
 
 ## Comandos
 
@@ -88,3 +92,4 @@ o gate inteiro localmente.
   chamada — ver ADR 0004.
 
 Detalhes em `docs/guidelines/01_style_guide.md` e `docs/sdd/02_arquitetura.md`.
+Para "onde ponho este arquivo?", `docs/sdd/03_mapa_de_codigo.md`.
