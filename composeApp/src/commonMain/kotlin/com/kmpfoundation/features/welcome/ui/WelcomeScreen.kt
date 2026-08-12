@@ -18,8 +18,6 @@ import com.kmpfoundation.features.welcome.presentation.WelcomeViewModel
 
 @Composable
 fun WelcomeScreen(viewModel: WelcomeViewModel) {
-    // `WithLifecycle` e não `collectAsState`: sem isso a tela segue coletando
-    // com o app em background. A carga inicial é do ViewModel, não daqui.
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(

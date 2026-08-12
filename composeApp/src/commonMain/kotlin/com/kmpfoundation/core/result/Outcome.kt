@@ -1,9 +1,6 @@
 package com.kmpfoundation.core.result
 
-/**
- * Resultado de uma operação que pode falhar. Difere de `kotlin.Result` por
- * tipar o erro: o compilador força tratar cada caso no `when` — ver ADR 0002.
- */
+/** Resultado tipado de uma operação que pode falhar — ADR 0002. */
 sealed interface Outcome<out T> {
     data class Success<out T>(val value: T) : Outcome<T>
     data class Failure(val error: AppError) : Outcome<Nothing>
@@ -14,11 +11,7 @@ inline fun <T, R> Outcome<T>.map(transform: (T) -> R): Outcome<R> = when (this) 
     is Outcome.Failure -> this
 }
 
-/**
- * Erros que a camada de apresentação sabe tratar. Cada caso existe porque a UI
- * reage a ele de forma diferente; erro que não muda o comportamento da tela não
- * merece um caso próprio (ADR 0002).
- */
+/** Fechado por comportamento de UI, não por causa técnica — ADR 0002. */
 sealed interface AppError {
     /** Sem conexão ou servidor inacessível: cabe oferecer "tentar de novo". */
     data object Connectivity : AppError

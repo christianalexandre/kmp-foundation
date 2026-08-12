@@ -2,9 +2,7 @@ import SwiftUI
 import UIKit
 import ComposeApp
 
-/// Hospeda a raiz Compose (MainViewController exportado no framework ComposeApp).
-/// O grafo chega pronto de `iOSApp` — as dependências de plataforma (engines
-/// nativas etc.) são construídas lá, junto do composition root.
+/// Hospeda a raiz Compose exportada no framework ComposeApp.
 struct ComposeView: UIViewControllerRepresentable {
     let graph: AppGraph
 
