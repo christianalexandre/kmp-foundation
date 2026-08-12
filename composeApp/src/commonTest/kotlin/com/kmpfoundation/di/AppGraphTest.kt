@@ -1,6 +1,7 @@
 package com.kmpfoundation.di
 
 import com.kmpfoundation.core.platform.FakeGreetingEngine
+import com.kmpfoundation.core.platform.platformName
 import com.kmpfoundation.features.welcome.presentation.WelcomeUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +38,7 @@ class AppGraphTest {
         advanceUntilIdle()
 
         assertEquals(
-            WelcomeUiState.Content("hello from the composition root"),
+            WelcomeUiState.Content("hello from the composition root — de ${platformName()}"),
             viewModel.state.value,
         )
     }

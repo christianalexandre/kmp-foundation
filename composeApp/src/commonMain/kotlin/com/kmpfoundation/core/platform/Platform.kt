@@ -1,7 +1,4 @@
 package com.kmpfoundation.core.platform
 
-/**
- * Caso simples da fronteira: dado de plataforma que não precisa de callback nem
- * de ciclo de vida. Para engines assíncronas, ver [GreetingEngine].
- */
+/** Dado de plataforma sem callback nem ciclo de vida — o caso simples da fronteira. */
 expect fun platformName(): String

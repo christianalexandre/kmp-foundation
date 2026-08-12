@@ -1,6 +1,7 @@
 package com.kmpfoundation.features.welcome.data
 
 import com.kmpfoundation.core.platform.FakeGreetingEngine
+import com.kmpfoundation.core.platform.platformName
 import com.kmpfoundation.core.result.AppError
 import com.kmpfoundation.core.result.Outcome
 import com.kmpfoundation.features.welcome.domain.WelcomeMessage
@@ -11,12 +12,24 @@ import kotlin.test.assertEquals
 class PlatformMessageRepositoryTest {
 
     @Test
-    fun wrapsEngineResponseInDomainEntity() = runTest {
-        val engine = FakeGreetingEngine(greeting = "Hello, kmp-foundation")
+    fun composesTheEngineGreetingWithThePlatformName() = runTest {
+        val engine = FakeGreetingEngine(greeting = "Olá, kmp-foundation")
 
         val result = PlatformMessageRepository(engine).welcomeMessage()
 
-        assertEquals(Outcome.Success(WelcomeMessage("Hello, kmp-foundation")), result)
+        assertEquals(
+            Outcome.Success(WelcomeMessage("Olá, kmp-foundation — de ${platformName()}")),
+            result,
+        )
+    }
+
+    @Test
+    fun asksTheEngineForTheAppName() = runTest {
+        val engine = FakeGreetingEngine()
+
+        PlatformMessageRepository(engine).welcomeMessage()
+
+        assertEquals("kmp-foundation", engine.calls.single().name)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.kmpfoundation.features.welcome.di
 
 import com.kmpfoundation.core.platform.FakeGreetingEngine
+import com.kmpfoundation.core.platform.platformName
 import com.kmpfoundation.core.result.Outcome
 import com.kmpfoundation.features.welcome.FakeMessageRepository
 import com.kmpfoundation.features.welcome.domain.WelcomeMessage
@@ -52,7 +53,10 @@ class WelcomeGraphTest {
         val viewModel = graph.viewModel()
         advanceUntilIdle()
 
-        assertEquals(WelcomeUiState.Content("hello from fake"), viewModel.state.value)
+        assertEquals(
+            WelcomeUiState.Content("hello from fake — de ${platformName()}"),
+            viewModel.state.value,
+        )
     }
 
     @Test
