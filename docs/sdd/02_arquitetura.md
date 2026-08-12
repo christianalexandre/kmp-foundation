@@ -26,7 +26,7 @@ com/kmpfoundation/
 │   └── ui/App.kt          # raiz Compose (tema + casca de navegação)
 └── features/
     └── welcome/           # feature-exemplo (deletar no clone)
-        ├── domain/        # entidades, portas (interfaces) e use cases — Kotlin puro
+        ├── domain/        # entidades e portas (interfaces) — Kotlin puro, sem use cases
         ├── data/          # implementações das portas (HTTP, banco, SDK nativo)
         ├── presentation/  # ViewModels: TODA a lógica de apresentação
         ├── ui/            # composables: casca fina sobre o ViewModel
@@ -38,8 +38,11 @@ dívida registrada):
 
 1. `domain` não importa de `data`, `presentation` nem `ui`. Kotlin puro.
 2. `data` implementa as portas de `domain`; não conhece `presentation`/`ui`.
-3. `ui` só consome `presentation`. Lógica em `ui/` é defeito de review.
-4. **Feature não importa de outra feature** — só de `core/`. Composição entre
+3. `presentation` depende da **porta** de `domain`, não da implementação —
+   **sem camada de use case** entre os dois (ADR 0005). Operação que só
+   repassaria não vira classe.
+4. `ui` só consome `presentation`. Lógica em `ui/` é defeito de review.
+5. **Feature não importa de outra feature** — só de `core/`. Composição entre
    features acontece no `AppGraph`/navegação. É esta regra que torna a extração
    de um módulo Gradle futuro um "mover pasta".
 
@@ -49,8 +52,8 @@ Sem framework — decisão registrada no **ADR 0001**, com o gatilho para
 reavaliar. O grafo é código explícito, em dois níveis:
 
 - **`features/<nome>/di/<Nome>Graph.kt`** — único lugar que conhece as tripas da
-  feature (repositório, use case, ViewModel). Dependências compartilhadas entram
-  por construtor.
+  feature (repositório, ViewModel). Dependências compartilhadas entram por
+  construtor.
 - **`di/AppGraph.kt`** — o composition root, no topo. Cresce **uma linha por
   feature**; cria as dependências compartilhadas e as repassa.
 
@@ -142,8 +145,20 @@ conhece o SDK. Em `commonTest`, um Fake da engine permite testar toda a lógica
 dependente de plataforma sem device nem simulador, inclusive o comportamento
 sob chamadas concorrentes.
 
-O caso simples da fronteira (dado sem callback nem ciclo de vida) usa
-`expect/actual` direto: ver `core/platform/Platform.kt`.
+### Qual dos dois mecanismos usar
+
+São **dois, e a escolha é objetiva**:
+
+| Situação | Mecanismo |
+| --- | --- |
+| Dado de plataforma, síncrono, sem ciclo de vida (versão do SO, locale) | `expect/actual` — `core/platform/Platform.kt` |
+| Trabalho assíncrono de um SDK nativo, com cancelamento | Interface + callback + `Cancellable` — `GreetingEngine` |
+
+A engine devolve **só o que é específico da plataforma**; texto de produto e
+composição ficam em `commonMain` (ver `PlatformMessageRepository`, que junta a
+saudação da engine com o `platformName()`). Se cada engine montasse a string
+final, a mesma decisão de produto existiria duas vezes — uma em Kotlin, outra em
+Swift — e divergiria na primeira alteração.
 
 ### Ilhas nativas
 
@@ -159,7 +174,7 @@ O template nasce com um módulo por simplicidade, mas preparado para dividir:
 1. Criar `features/<nome>/` como módulo Gradle aplicando os convention plugins
    (`kmpfoundation.kmp.module` + `kmpfoundation.quality`) — os gates e os
    targets vêm juntos; o módulo só declara o próprio `namespace`.
-2. Mover a pasta da feature (a regra 4 garante que não há imports cruzados).
+2. Mover a pasta da feature (a regra 5 garante que não há imports cruzados).
 3. **iOS**: novos módulos precisam de `export()` no framework umbrella do
    `composeApp` para seus tipos aparecerem no header Objective-C.
 4. `core/` se divide por último (`core:navigation`, `core:design`, …).

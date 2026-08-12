@@ -2,7 +2,6 @@ package com.kmpfoundation.features.welcome.di
 
 import com.kmpfoundation.core.platform.GreetingEngine
 import com.kmpfoundation.features.welcome.data.PlatformMessageRepository
-import com.kmpfoundation.features.welcome.domain.GetWelcomeMessageUseCase
 import com.kmpfoundation.features.welcome.domain.MessageRepository
 import com.kmpfoundation.features.welcome.presentation.WelcomeViewModel
 
@@ -12,7 +11,5 @@ class WelcomeGraph(
 ) {
     constructor(engine: GreetingEngine) : this(PlatformMessageRepository(engine))
 
-    // Factory, não instância: o ciclo de vida é do `viewModel { }` da UI.
-    fun viewModel(): WelcomeViewModel =
-        WelcomeViewModel(GetWelcomeMessageUseCase(messageRepository))
+    fun viewModel(): WelcomeViewModel = WelcomeViewModel(messageRepository)
 }

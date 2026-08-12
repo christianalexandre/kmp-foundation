@@ -3,7 +3,6 @@ package com.kmpfoundation.features.welcome.presentation
 import com.kmpfoundation.core.result.AppError
 import com.kmpfoundation.core.result.Outcome
 import com.kmpfoundation.features.welcome.FakeMessageRepository
-import com.kmpfoundation.features.welcome.domain.GetWelcomeMessageUseCase
 import com.kmpfoundation.features.welcome.domain.WelcomeMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,7 +42,7 @@ class WelcomeViewModelTest {
     fun loadsOnCreationWithoutTheScreenAskingForIt() = runTest(dispatcher) {
         val repository = FakeMessageRepository(Outcome.Success(WelcomeMessage("welcome")))
 
-        val viewModel = WelcomeViewModel(GetWelcomeMessageUseCase(repository))
+        val viewModel = WelcomeViewModel(repository)
         advanceUntilIdle()
 
         assertEquals(WelcomeUiState.Content("welcome"), viewModel.state.value)
@@ -53,7 +52,7 @@ class WelcomeViewModelTest {
     @Test
     fun retryWhileALoadIsInFlightIsIgnored() = runTest(dispatcher) {
         val repository = FakeMessageRepository()
-        val viewModel = WelcomeViewModel(GetWelcomeMessageUseCase(repository))
+        val viewModel = WelcomeViewModel(repository)
 
         // The load started by `init` has not run yet on the test dispatcher.
         viewModel.load()
@@ -66,7 +65,7 @@ class WelcomeViewModelTest {
     @Test
     fun retryAfterAFinishedLoadRunsAgain() = runTest(dispatcher) {
         val repository = FakeMessageRepository()
-        val viewModel = WelcomeViewModel(GetWelcomeMessageUseCase(repository))
+        val viewModel = WelcomeViewModel(repository)
         advanceUntilIdle()
 
         viewModel.load()
@@ -117,5 +116,5 @@ class WelcomeViewModelTest {
     private fun viewModel(
         outcome: Outcome<WelcomeMessage> = Outcome.Success(WelcomeMessage("hello")),
     ): WelcomeViewModel =
-        WelcomeViewModel(GetWelcomeMessageUseCase(FakeMessageRepository(outcome)))
+        WelcomeViewModel(FakeMessageRepository(outcome))
 }

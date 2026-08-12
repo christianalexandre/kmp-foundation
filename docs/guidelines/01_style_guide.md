@@ -70,8 +70,12 @@ não estão documentadas em nenhum outro lugar do repositório.
 - **O `AppGraph` é construído pela casca da aplicação** (`Application` /
   `iOSApp`), nunca por uma Activity, composable ou `ContentView` — o que a
   plataforma pode recriar não pode ser dono do composition root (ADR 0003).
-- `domain` é Kotlin puro; `data` implementa as portas do domain; `ui` só
-  consome `presentation`. Detalhes no SDD 02.
+- `domain` é Kotlin puro (entidades e portas); `data` implementa as portas; `ui`
+  só consome `presentation`. Detalhes no SDD 02.
+- **Sem camada de use case** (ADR 0005): o ViewModel depende da porta de
+  repositório. Operação que só repassaria não vira classe. Regra nova que não
+  couber nem no ViewModel nem no repositório nasce como **função pura** em
+  `domain/`.
 
 ## Telas (padrão que toda feature copia)
 

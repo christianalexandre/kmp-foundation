@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmpfoundation.core.result.AppError
 import com.kmpfoundation.core.result.Outcome
-import com.kmpfoundation.features.welcome.domain.GetWelcomeMessageUseCase
+import com.kmpfoundation.features.welcome.domain.MessageRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,27 +18,23 @@ sealed interface WelcomeUiState {
 }
 
 class WelcomeViewModel(
-    private val getWelcomeMessage: GetWelcomeMessageUseCase,
+    private val repository: MessageRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow<WelcomeUiState>(WelcomeUiState.Loading)
     val state: StateFlow<WelcomeUiState> = _state.asStateFlow()
 
     private var loadJob: Job? = null
 
-    // A carga inicial nasce AQUI, e não num LaunchedEffect da tela: o ViewModel
-    // sobrevive à recriação da Activity, a composição não. Disparar pela tela
-    // refaria a busca a cada rotação.
+    // Carga inicial aqui, não num LaunchedEffect da tela — style guide, "Telas".
     init {
         load()
     }
 
     fun load() {
-        // Toques repetidos em "tentar de novo" não empilham buscas concorrentes:
-        // quem estiver em voo já está refletido no estado de Loading.
         if (loadJob?.isActive == true) return
         _state.value = WelcomeUiState.Loading
         loadJob = viewModelScope.launch {
-            _state.value = when (val outcome = getWelcomeMessage()) {
+            _state.value = when (val outcome = repository.welcomeMessage()) {
                 is Outcome.Success -> WelcomeUiState.Content(outcome.value.text)
                 is Outcome.Failure -> outcome.error.toUiState()
             }
@@ -46,8 +42,7 @@ class WelcomeViewModel(
     }
 }
 
-// O erro de domínio vira texto e ação AQUI, não na tela: é a decisão de
-// produto sobre cada falha, e é o que os testes verificam.
+// Erro vira texto e ação aqui, nunca na tela — ADR 0002.
 private fun AppError.toUiState(): WelcomeUiState.Error = when (this) {
     is AppError.Connectivity ->
         WelcomeUiState.Error("Sem conexão. Verifique a internet.", canRetry = true)
