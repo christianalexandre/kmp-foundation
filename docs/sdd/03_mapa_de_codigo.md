@@ -67,46 +67,65 @@ flowchart TD
     q5 -->|Nao| feat["composeApp/commonMain/features/nome/"]
     q5 -->|Sim| core["composeApp/commonMain/core/"]
 
-    q1 -->|Sim| q2{"O resultado e assincrono?"}
+    q1 -->|Sim| q2{"O Kotlin/Native alcanca<br/>a API sozinho?"}
 
-    q2 -->|"Nao: sincrono, sem ciclo de vida"| ea["expect em commonMain/core/platform<br/>+ actual em androidMain e iosMain"]
+    q2 -->|"Sim: UIDevice, Build"| ea["NIVEL 1 - expect/actual<br/>expect em core/platform<br/>actual em androidMain e iosMain"]
 
-    q2 -->|Sim| contrato["Contrato em commonMain/core/platform<br/>interface + callback"]
-    contrato --> q3{"O trabalho nativo continua<br/>consumindo algo se ninguem parar?"}
-    q3 -->|Sim| handle["Devolve CallHandle<br/>que para o recurso"]
-    q3 -->|Nao| noop["Devolve NoOpCancellable"]
-    handle --> impl["Implementacao NA CASCA<br/>androidApp em Kotlin, iosApp em Swift"]
-    noop --> impl
+    q2 -->|"Nao: so via SDK ou Swift"| q3{"O resultado e assincrono?"}
+
+    q3 -->|Nao| sinc["NIVEL 2 - interface sincrona<br/>core/platform, sem callback<br/>exemplo: GreetingEngine"]
+    q3 -->|Sim| async["NIVEL 3 - interface + callback + Cancellable<br/>exemplo: DeviceScanner"]
+
+    sinc --> impl["Implementacao NA CASCA<br/>androidApp em Kotlin, iosApp em Swift"]
+    async --> impl
     impl --> injeta["A casca constroi e injeta no AppGraph"]
 ```
 
-### Quando o padrão de engine se aplica — e quando não
+### Os três níveis da fronteira nativa
 
-O padrão tem **dois critérios independentes**, e confundi-los é o que faz ele
-parecer pesado:
+Confundir os níveis é o que faz o padrão parecer pesado. Cada um tem um exemplo
+vivo no template:
 
-1. **Interface + callback** — necessário quando o resultado é **assíncrono**.
-   Não é escolha: o Swift não consegue implementar uma função `suspend` do
-   Kotlin, então o contrato tem de ser callback (ADR 0006).
-2. **`Cancellable` de verdade** — necessário quando o trabalho nativo
-   **continua consumindo algo** se ninguém o parar: rádio ligado, câmera aberta,
-   sessão de SDK viva, requisição em voo, timer rodando.
+| Nível | Quando | Exemplo aqui | Custo |
+| --- | --- | --- | --- |
+| **1. `expect/actual`** | O Kotlin/Native já alcança a API (`UIDevice`, `Build`) | `platformName()` | Uma função por plataforma |
+| **2. Interface síncrona** | Só o SDK/Swift alcança, mas responde na hora | `GreetingEngine` | Interface + impl na casca |
+| **3. Interface + callback + `Cancellable`** | Demora **e** segura recurso enquanto roda | `DeviceScanner` | O contrato completo |
 
-O segundo critério é o que decide se há trabalho real a fazer. Sem ele, o
-handle existe só para o contrato ficar uniforme — e aí é `NoOpCancellable`.
+Duas perguntas resolvem qualquer caso:
 
-| Cenário | Precisa de engine? | Cancelamento carrega peso? |
+1. **O Kotlin/Native alcança sozinho?** Se sim, nível 1 — não invente interface.
+2. **O resultado é assíncrono?** Se não, nível 2. O Swift não consegue
+   implementar uma função `suspend` do Kotlin, então assíncrono obriga callback
+   (ADR 0006) — não é escolha de estilo.
+
+E o `Cancellable` só carrega peso quando o trabalho nativo **continua consumindo
+algo** se ninguém o parar:
+
+| Cenário | Nível | Cancelamento pesa? |
 | --- | --- | --- |
-| Versão do SO, locale, nome do aparelho | Não — `expect/actual` | — |
-| Scan BLE de netconfig | Sim | **Sim** — sem `cancel`, o rádio segue varrendo depois que o usuário sai |
-| Preview/stream de câmera | Sim | **Sim** — sessão de vídeo aberta |
-| Leitura de QR code | Sim | **Sim** — câmera aberta |
-| Consulta de status via SDK (rede) | Sim | **Sim** — requisição em voo |
-| Valor já em cache do SDK, devolvido por callback | Sim | Não — `NoOpCancellable` |
+| Versão do SO, locale | 1 | — |
+| SDK inicializado? token em cache? | 2 | — |
+| Scan BLE de netconfig | 3 | **Sim** — o rádio segue varrendo |
+| Preview/stream de câmera | 3 | **Sim** — sessão de vídeo aberta |
+| Leitura de QR code | 3 | **Sim** — câmera aberta |
+| Consulta de status via SDK (rede) | 3 | **Sim** — requisição em voo |
 
-O caso da `GreetingEngine` do template é o penúltimo tipo: assíncrona, mas sem
-recurso para desligar. Ela usa `CallHandle` mesmo assim porque é **exemplo do
-formato** — não porque a saudação precise ser cancelada.
+### O contrato de callback (nível 3)
+
+A implementação **precisa** honrar, e o adapter depende disso:
+
+- callbacks entregues de forma **serializada**, na main thread;
+- o callback de término é chamado **no máximo uma vez**;
+- depois de `cancel()`, nenhum callback é entregue.
+
+O segundo item não é preciosismo: `resume` concorrente numa continuation é
+`IllegalStateException`, e `trySend` após `close` num Flow vira evento perdido.
+
+**Atenção ao que "main thread" significa aqui:** só a *entrega do callback*.
+O trabalho de um SDK real (varredura BLE, decode de vídeo) roda nas threads do
+próprio SDK — nunca na main. E dados de alta frequência (frames, áudio) **não
+atravessam a fronteira**: ficam na ilha nativa (SDD 02).
 
 Em forma de tabela, para consulta rápida:
 
@@ -142,20 +161,25 @@ Para ver os saltos e o que cada um faz:
 
 ```mermaid
 sequenceDiagram
-    participant UI as WelcomeScreen
-    participant VM as WelcomeViewModel
-    participant Repo as PlatformMessageRepository
-    participant Eng as Engine nativa na casca
+    participant UI as DeviceListScreen
+    participant VM as DeviceListViewModel
+    participant Repo as PlatformDeviceRepository
+    participant Flow as callbackFlow adapter
+    participant Eng as DeviceScanner na casca
 
-    Note over VM: carga inicial no init, nao na tela
-    VM->>Repo: welcomeMessage()
-    Repo->>Eng: greet(nome, callback), devolve Cancellable
-    Eng-->>Repo: onResult(saudacao, erro)
-    Note over Repo: compoe o texto com platformName()
-    Repo-->>VM: Outcome de WelcomeMessage
-    Note over VM: traduz AppError em texto e acao
-    VM-->>UI: WelcomeUiState
-    UI->>UI: collectAsStateWithLifecycle
+    UI->>VM: startScan()
+    VM->>Repo: discover()
+    Repo->>Flow: coleta comeca
+    Flow->>Eng: startScan(callback), devolve Cancellable
+    Eng-->>Flow: onDeviceFound(...)
+    Flow-->>VM: ScanEvent.Found
+    VM-->>UI: lista cresce
+
+    Note over UI,Eng: usuario sai da tela ou aperta parar
+    UI->>VM: stopScan() ou viewModelScope cancela
+    VM->>Flow: coleta cancelada
+    Flow->>Eng: awaitClose dispara handle.cancel()
+    Note over Eng: recurso nativo desligado de verdade
 ```
 
 O contrato da engine é o mesmo nas duas plataformas; o que muda é quem o

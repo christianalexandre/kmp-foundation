@@ -4,7 +4,10 @@ import ComposeApp
 @main
 struct iOSApp: App {
     /// Dono do composition root no iOS — ADR 0003.
-    private let graph = AppGraph(engine: SwiftGreetingEngine())
+    private let graph = AppGraph(
+        greetingEngine: SwiftGreetingEngine(),
+        deviceScanner: SwiftDeviceScanner()
+    )
 
     var body: some Scene {
         WindowGroup {

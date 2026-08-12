@@ -1,5 +1,6 @@
 package com.kmpfoundation.di
 
+import com.kmpfoundation.core.platform.FakeDeviceScanner
 import com.kmpfoundation.core.platform.FakeGreetingEngine
 import com.kmpfoundation.core.platform.platformName
 import com.kmpfoundation.features.welcome.presentation.WelcomeUiState
@@ -32,7 +33,10 @@ class AppGraphTest {
 
     @Test
     fun wiresTheEngineAllTheWayDownToTheScreenState() = runTest(dispatcher) {
-        val graph = AppGraph(FakeGreetingEngine(greeting = "hello from the composition root"))
+        val graph = AppGraph(
+            FakeGreetingEngine(greeting = "hello from the composition root"),
+            FakeDeviceScanner(),
+        )
 
         val viewModel = graph.welcome.viewModel()
         advanceUntilIdle()

@@ -13,7 +13,7 @@ arquitetura por feature já configurados.
 | Quality gates | Kover (cobertura ≥ 80%) + Detekt/ktlint (código **e** convention plugins) em `./gradlew check`; SwiftLint no código Swift |
 | Build | AGP 9 + Gradle 9.5, Version Catalog (`gradle/libs.versions.toml`) e convention plugins em `build-logic/` |
 | Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), MVVM sem use case, DI manual + ViewModel multiplataforma. Mapa em `docs/sdd/03_mapa_de_codigo.md` |
-| Exemplo | `features/welcome/` demonstra o padrão completo com testes usando Fakes |
+| Exemplos | `features/welcome/` (fronteira síncrona) e `features/devices/` (assíncrona com cancelamento real), ambos com testes usando Fakes |
 
 ## Pré-requisitos
 
@@ -74,7 +74,9 @@ o gate inteiro localmente.
    `build-logic/.../Quality.kt`.
 3. Atualizar `iosApp/project.yml` (`bundleIdPrefix`, `PRODUCT_BUNDLE_IDENTIFIER`,
    `CFBundleDisplayName`) e rodar `xcodegen`.
-4. **Deletar `features/welcome/`** (e seus testes) — é só exemplo do padrão.
+4. **Deletar `features/welcome/` e `features/devices/`** (e seus testes), mais
+   as engines de exemplo em `androidApp/platform/` e `iosApp/` — são só
+   demonstração dos três níveis da fronteira nativa (SDD 03).
 5. Revisar `docs/sdd/` para refletir o produto real; iniciar ADRs a partir do 0001.
 6. Manter o gate de 80%: lógica nova nasce em `presentation/`/`domain`/`data` com teste.
 

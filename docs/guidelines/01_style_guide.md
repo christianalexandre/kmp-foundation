@@ -50,7 +50,7 @@ não estão documentadas em nenhum outro lugar do repositório.
 - Estrutura: Arrange / Act / Assert, nomes em camelCase descrevendo o
   comportamento (`loadsOnCreationWithoutTheScreenAskingForIt`).
 - **Cobertura ≥ 80% de linha** (Kover, gate local). O que conta: `domain`,
-  `data`, `presentation`, `core` (exceto `core/ui`). O que não conta: `*.ui.*`
+  `data`, `presentation`, `core` (a UI vive em `ui/`, fora da medição). O que não conta: `*.ui.*`
   e entry points de plataforma.
 - **Corolário: lógica não vive em `ui/`.** Composable é casca fina — renderiza
   estado e delega ações ao ViewModel. Condicional de negócio num composable

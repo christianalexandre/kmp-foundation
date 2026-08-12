@@ -1,8 +1,8 @@
 package com.kmpfoundation
 
 import androidx.compose.ui.window.ComposeUIViewController
-import com.kmpfoundation.core.ui.App
 import com.kmpfoundation.di.AppGraph
+import com.kmpfoundation.ui.App
 import platform.UIKit.UIViewController
 
 // PascalCase porque o Swift consome isto como se fosse um construtor.

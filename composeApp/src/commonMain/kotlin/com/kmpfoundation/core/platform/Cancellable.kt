@@ -19,6 +19,3 @@ class CallHandle(private val onCancel: () -> Unit) : Cancellable {
         onCancel()
     }
 }
-
-/** Handle de operação que não tem o que cancelar (resposta já em memória). */
-val NoOpCancellable: Cancellable = CallHandle { }

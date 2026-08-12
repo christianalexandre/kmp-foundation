@@ -69,8 +69,6 @@ class CallHandle(private val onCancel: () -> Unit) : Cancellable {
 - `Cancellable` e `CallHandle` saem de `GreetingEngine.kt` para
   `core/platform/Cancellable.kt`: são infraestrutura genérica, enquanto a
   `GreetingEngine` é exemplo. Isso também facilita o clone.
-- `NoOpCancellable` cobre a operação assíncrona que **não tem o que cancelar**,
-  para o contrato seguir uniforme sem inventar cerimônia.
 
 **O padrão de engine não é para toda ida ao nativo.** O escopo, com os critérios
 e a tabela de cenários, está no SDD 03 — resumido: interface + callback quando o

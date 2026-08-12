@@ -111,40 +111,58 @@ texto e ação acontece no ViewModel, nunca no composable.
 ## Fronteira KMP ↔ nativo
 
 Convenções provadas no imou-smart-home e **executadas aqui** em
-`core/platform/` — o exemplo é o `GreetingEngine`, deliberadamente trivial no
-que faz e fiel no formato.
+`core/platform/`, em **três níveis** — cada um com um exemplo vivo. A árvore de
+decisão completa está no SDD 03; aqui ficam as regras.
 
 ### Interface Swift-friendly para engines nativas
 
-Quando o iOS precisa implementar um contrato Kotlin (engine de netconfig,
-player, scanner), a interface em `commonMain` **não usa `suspend` nem `sealed`
-nas assinaturas** — nenhum dos dois sobrevive bem à exportação para o header
-Objective-C. O padrão, como está em `core/platform/GreetingEngine.kt`:
+Quando o iOS precisa implementar um contrato Kotlin, a interface em `commonMain`
+**não usa `suspend` nem `sealed` nas assinaturas** — nenhum dos dois sobrevive
+bem à exportação para o header Objective-C. Que `suspend` esteja fora não é
+estilo: o Swift **não consegue implementar** uma função `suspend` do Kotlin.
+
+O caso **síncrono** (`core/platform/GreetingEngine.kt`) é só isto:
 
 ```kotlin
-interface SomeEngine {
+interface GreetingEngine {
     val isAvailable: Boolean
-    fun start(request: Request, callback: Callback): Cancellable  // handle POR CHAMADA
+    fun greeting(name: String): String
 }
-
-suspend fun SomeEngine.execute(request: Request): Outcome<T> =  // adapter p/ Kotlin
-    suspendCancellableCoroutine { /* callback → continuation; handle.cancel() no cancel */ }
 ```
 
-`Cancellable` e o helper `CallHandle` vivem em `core/platform/Cancellable.kt` —
-genéricos, separados da engine de exemplo. A implementação devolve
-`CallHandle { /* para o recurso */ }`, ou `NoOpCancellable` quando não há o que
-parar. **Quando o padrão se aplica** (e quando `expect/actual` basta) está no
-SDD 03; a evidência por trás da escolha, no ADR 0006.
+O caso **assíncrono** (`core/platform/DeviceScanner.kt`) acrescenta callback e
+handle de cancelamento:
+
+```kotlin
+interface DeviceScanner {
+    val isAvailable: Boolean
+    fun startScan(callback: DeviceScanCallback): Cancellable   // handle POR CHAMADA
+}
+
+fun DeviceScanner.scan(): Flow<ScanEvent> = callbackFlow {   // adapter p/ Kotlin
+    val handle = startScan(/* callback → trySend */)
+    awaitClose { handle.cancel() }        // desliga o recurso nativo
+}
+```
+
+`callbackFlow` porque uma varredura é um **fluxo** de eventos; para resultado
+único, `suspendCancellableCoroutine`. Nos dois casos o `awaitClose`/
+`invokeOnCancellation` é o que amarra o cancelamento da coroutine ao recurso
+nativo — sem ele, o rádio segue ligado depois que a tela morre.
+
+`Cancellable` e o helper `CallHandle` vivem em `core/platform/Cancellable.kt`,
+separados das engines de exemplo. A implementação devolve
+`CallHandle { /* para o recurso */ }` — nunca uma classe própria (ADR 0006).
 
 O cancelamento é **por chamada, nunca da engine** — ADR 0004. A engine é
 compartilhada (vive no escopo de aplicação), então um `cancel()` nela teria
 semântica errada: cancelaria as chamadas dos outros. Corolário obrigatório:
 **a engine não guarda estado de chamada**; quem guarda é o handle.
 
-O Swift conforma direto ao protocolo exportado no framework
-(`iosApp/iosApp/GreetingEngine.swift`); o lado Kotlin usa o adapter `suspend`,
-que amarra o handle daquela chamada ao ciclo de vida da coroutine.
+**Contrato de callback** que a implementação precisa honrar: entrega
+serializada na main thread e término chamado no máximo uma vez. Vale para a
+*entrega* — o trabalho do SDK roda nas threads dele, e dados de alta frequência
+(frames, áudio) não atravessam a fronteira: ficam na ilha nativa.
 
 **A engine é implementada E construída na casca da plataforma** — Kotlin em
 `androidApp/`, Swift em `iosApp/` — e injetada no `AppGraph`. O módulo
@@ -165,8 +183,9 @@ São **dois, e a escolha é objetiva**:
 
 | Situação | Mecanismo |
 | --- | --- |
-| Dado de plataforma, síncrono, sem ciclo de vida (versão do SO, locale) | `expect/actual` — `core/platform/Platform.kt` |
-| Trabalho assíncrono de um SDK nativo, com cancelamento | Interface + callback + `Cancellable` — `GreetingEngine` |
+| Dado de plataforma que o Kotlin/Native alcança (versão do SO, locale) | `expect/actual` — `core/platform/Platform.kt` |
+| Só o SDK/Swift alcança, mas responde na hora | Interface síncrona — `GreetingEngine` |
+| Trabalho assíncrono de um SDK nativo, com cancelamento | Interface + callback + `Cancellable` — `DeviceScanner` |
 
 A engine devolve **só o que é específico da plataforma**; texto de produto e
 composição ficam em `commonMain` (ver `PlatformMessageRepository`, que junta a

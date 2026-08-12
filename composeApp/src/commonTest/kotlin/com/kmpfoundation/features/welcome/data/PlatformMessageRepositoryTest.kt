@@ -29,15 +29,18 @@ class PlatformMessageRepositoryTest {
 
         PlatformMessageRepository(engine).welcomeMessage()
 
-        assertEquals("kmp-foundation", engine.calls.single().name)
+        assertEquals("kmp-foundation", engine.lastName)
     }
 
     @Test
-    fun propagatesPlatformFailure() = runTest {
-        val engine = FakeGreetingEngine(greeting = null, errorMessage = "permission denied")
+    fun propagatesUnavailablePlatformAsTypedFailure() = runTest {
+        val engine = FakeGreetingEngine(isAvailable = false)
 
         val result = PlatformMessageRepository(engine).welcomeMessage()
 
-        assertEquals(Outcome.Failure(AppError.Platform("permission denied")), result)
+        assertEquals(
+            Outcome.Failure(AppError.Platform("engine indisponível nesta plataforma")),
+            result,
+        )
     }
 }
