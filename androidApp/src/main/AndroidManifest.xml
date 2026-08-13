@@ -1,26 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:name=".KmpFoundationApplication"
         android:label="kmp-foundation"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        tools:targetApi="tiramisu"
-        android:enableOnBackInvokedCallback="true">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <!--
-            LAUNCHER APONTADO PARA A BANCADA DO RFC 0001 enquanto o spike está em
-            validação — par da troca de raiz no iOSApp.swift. Para voltar ao app,
-            mover o intent-filter de volta para .MainActivity.
-
-            android:enableOnBackInvokedCallback habilita o back PREDITIVO, que é a
-            janela de amostragem do pior caso (duas Activities desenhando durante o
-            gesto). Sem ele não há gesto progressivo para medir.
+            Um host, várias instâncias: cada uma desenha a rota que veio no seu
+            Intent (ADR 0007). O launchMode padrão (standard) é o que permite
+            empilhar mais de uma — trocar por singleTask quebraria a navegação.
         -->
         <activity
-            android:name=".spike.SpikeActivity"
+            android:name=".HostActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,13 +21,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Destino 100% nativo da bancada: UI de View, sem Compose. -->
+        <!-- Destino nativo de exemplo: apagar ao clonar, junto com features/devices. -->
         <activity
-            android:name=".spike.SpikeNativeActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".MainActivity"
+            android:name=".DeviceDetailActivity"
             android:exported="false" />
     </application>
 

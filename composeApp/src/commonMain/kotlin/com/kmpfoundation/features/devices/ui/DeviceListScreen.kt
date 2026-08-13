@@ -1,5 +1,6 @@
 package com.kmpfoundation.features.devices.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +17,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmpfoundation.features.devices.presentation.DeviceListViewModel
 
 @Composable
-fun DeviceListScreen(viewModel: DeviceListViewModel, modifier: Modifier = Modifier) {
+fun DeviceListScreen(
+    viewModel: DeviceListViewModel,
+    onDeviceSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -30,7 +35,15 @@ fun DeviceListScreen(viewModel: DeviceListViewModel, modifier: Modifier = Modifi
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             items(state.devices, key = { it.id }) { device ->
-                Text(device.name, modifier = Modifier.padding(vertical = 4.dp))
+                // Recebe um callback simples, não uma rota: a tela não conhece
+                // navegação, e a decisão fica na NavigationPolicy — ADR 0007.
+                Text(
+                    text = device.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDeviceSelected(device.id) }
+                        .padding(vertical = 8.dp),
+                )
             }
         }
     }

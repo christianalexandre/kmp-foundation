@@ -1,23 +1,26 @@
+import ComposeApp
 import SwiftUI
 import UIKit
-import ComposeApp
 
-/// Hospeda a raiz Compose exportada no framework ComposeApp.
-struct ComposeView: UIViewControllerRepresentable {
+/// Hospeda a casca de navegação — ver RootCoordinator.
+struct RootView: UIViewControllerRepresentable {
+
     let graph: AppGraph
 
-    func makeUIViewController(context: Context) -> UIViewController {
-        MainViewControllerKt.MainViewController(graph: graph)
+    func makeCoordinator() -> RootCoordinator { RootCoordinator(graph: graph) }
+
+    func makeUIViewController(context: Context) -> UINavigationController {
+        context.coordinator.makeNavigationController()
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {}
 }
 
 struct ContentView: View {
     let graph: AppGraph
 
     var body: some View {
-        ComposeView(graph: graph)
-            .ignoresSafeArea(.all)
+        RootView(graph: graph)
+            .ignoresSafeArea(.keyboard)
     }
 }
