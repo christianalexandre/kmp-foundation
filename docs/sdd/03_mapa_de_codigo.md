@@ -8,14 +8,14 @@ coloco?"**. O *porquê* de cada regra está no SDD 02 e nos ADRs — aqui é o m
 ```mermaid
 graph TB
     subgraph cascas["Cascas de plataforma - empacotam, nao contem logica"]
-        androidApp["androidApp/<br/>com.android.application<br/>Application, MainActivity<br/>engines nativas em Kotlin"]
-        iosApp["iosApp/<br/>Xcode + XcodeGen<br/>iOSApp, ContentView<br/>engines nativas em Swift"]
+        androidApp["androidApp/<br/>com.android.application<br/>Application, HostActivity<br/>telas e engines nativas em Kotlin"]
+        iosApp["iosApp/<br/>Xcode + XcodeGen<br/>iOSApp, RootCoordinator<br/>telas e engines nativas em Swift"]
     end
 
     subgraph shared["composeApp/ - modulo KMP compartilhado"]
         commonMain["commonMain<br/>logica, UI e contratos<br/>a maior parte do codigo"]
         androidMain["androidMain<br/>actual de expect/actual"]
-        iosMain["iosMain<br/>actual + MainViewController"]
+        iosMain["iosMain<br/>actual + RouteViewController"]
     end
 
     androidApp -->|depende do projeto| commonMain
@@ -49,10 +49,12 @@ foi decisão:
 | O quê | Android | iOS | Por quê |
 | --- | --- | --- | --- |
 | `actual` de `expect/actual` | `composeApp/androidMain` | `composeApp/iosMain` | O compilador exige o `actual` no source set do alvo. |
-| Entry point Compose | `androidApp/MainActivity` | `composeApp/iosMain/MainViewController` | Um precisa estar no manifesto; o outro precisa ser exportado no framework, logo é Kotlin. |
+| Entry point Compose | `androidApp/HostActivity` | `composeApp/iosMain/RouteViewController` | Um precisa estar no manifesto; o outro precisa ser exportado no framework, logo é Kotlin. |
 | Implementação de engine nativa | `androidApp/` (Kotlin) | `iosApp/` (Swift) | No iOS não há escolha: Swift só existe no projeto Xcode. Manter o Android na casca é **decisão** — ver abaixo. |
+| Dono da pilha de navegação | pilha de Activities | `UINavigationController` | ADR 0007: a pilha é a da plataforma. Cada destino Compose é uma raiz própria. |
+| Tela 100% nativa | `androidApp/` (`View`) | `iosApp/` (SwiftUI) | Ela **é** da plataforma — é o caso que o ADR 0007 existe para suportar. |
 
-O `AndroidGreetingEngine` poderia estar em `androidMain`, já que é Kotlin. Fica
+O `AndroidDeviceScanner` poderia estar em `androidMain`, já que é Kotlin. Fica
 na casca por três motivos: simetria com o iOS; o SDK vendor (Imou/Tuya) ficar
 fora do módulo que também gera o framework iOS; e a implementação viver junto de
 quem a constrói (ADR 0003).
@@ -73,7 +75,7 @@ flowchart TD
 
     q2 -->|"Nao: so via SDK ou Swift"| q3{"O resultado e assincrono?"}
 
-    q3 -->|Nao| sinc["NIVEL 2 - interface sincrona<br/>core/platform, sem callback<br/>exemplo: GreetingEngine"]
+    q3 -->|Nao| sinc["NIVEL 2 - interface sincrona<br/>core/platform, sem callback<br/>exemplo: DeviceScanner.isAvailable"]
     q3 -->|Sim| async["NIVEL 3 - interface + callback + Cancellable<br/>exemplo: DeviceScanner"]
 
     sinc --> impl["Implementacao NA CASCA<br/>androidApp em Kotlin, iosApp em Swift"]
@@ -89,8 +91,13 @@ vivo no template:
 | Nível | Quando | Exemplo aqui | Custo |
 | --- | --- | --- | --- |
 | **1. `expect/actual`** | O Kotlin/Native já alcança a API (`UIDevice`, `Build`) | `platformName()` | Uma função por plataforma |
-| **2. Interface síncrona** | Só o SDK/Swift alcança, mas responde na hora | `GreetingEngine` | Interface + impl na casca |
+| **2. Interface síncrona** | Só o SDK/Swift alcança, mas responde na hora | `DeviceScanner.isAvailable` | Interface + impl na casca |
 | **3. Interface + callback + `Cancellable`** | Demora **e** segura recurso enquanto roda | `DeviceScanner` | O contrato completo |
+
+O nível 2 **não tem engine dedicada** no template: o `isAvailable` do
+`DeviceScanner` é exatamente ele — uma pergunta ao SDK que responde na hora, sem
+callback e sem nada a cancelar. Uma engine só-síncrona seria a mesma interface
+sem o `startScan`.
 
 Duas perguntas resolvem qualquer caso:
 
@@ -132,6 +139,9 @@ Em forma de tabela, para consulta rápida:
 | Quero adicionar… | Vai em |
 | --- | --- |
 | Tela, ViewModel, entidade, repositório de uma feature | `composeApp/commonMain/features/<nome>/` |
+| **Uma tela Compose** | `features/<nome>/ui/` — **sempre**, sem exceção |
+| **Um destino novo** | rota em `nav/Route.kt`, a decisão que leva a ele em `nav/NavigationPolicy.kt`, o título em `nav/RouteTitle.kt` e um ramo no `when` de `ui/RouteContent.kt` |
+| **Uma tela 100% nativa** | a casca (`androidApp/`, `iosApp/`) + uma `Route` com `isNative` |
 | Algo usado por duas ou mais features | `composeApp/commonMain/core/` |
 | Versão do SO, locale, dado de plataforma síncrono | `expect` em `core/platform/` + `actual` nos dois source sets |
 | Contrato de SDK nativo (câmera, BLE, IoT) | `commonMain/core/platform/` — interface + `Cancellable` |
@@ -154,6 +164,60 @@ graph LR
 Sem camada de use case: o ViewModel depende da **porta**, não da implementação
 (ADR 0005). As setas são as regras de dependência do SDD 02 — `domain` não
 aponta para ninguém, e nenhuma feature aponta para outra feature.
+
+## Navegação: onde mora cada peça
+
+O porquê está no SDD 02 e no ADR 0007. Aqui é o mapa — e a regra de ouro é que
+`ui/RouteContent.kt` **só faz moldura e despacho**: nenhuma tela nasce nele.
+
+```mermaid
+graph TB
+    subgraph nav["nav/ - nao conhece feature nenhuma, so ids"]
+        route["Route.kt<br/>os destinos, com isNative"]
+        policy["NavigationPolicy.kt<br/>QUEM DECIDE o destino"]
+        title["RouteTitle.kt<br/>o titulo de cada rota"]
+        codec["RouteCodec.kt<br/>rota como texto, p/ o Intent"]
+    end
+
+    subgraph topo["ui/ - o topo, unico que liga rota a feature"]
+        content["RouteContent.kt<br/>moldura + despacho"]
+    end
+
+    subgraph telas["features/nome/ui/ - toda tela Compose"]
+        tela["DeviceListScreen<br/>DeviceSettingsScreen"]
+    end
+
+    subgraph cascas["cascas - sabem COMO apresentar, nunca O QUE"]
+        and["HostActivity<br/>DeviceDetailActivity"]
+        ios["RootCoordinator<br/>DeviceDetailView"]
+    end
+
+    content --> tela
+    content --> route
+    tela -.->|callback simples| content
+    content -.->|rota decidida| policy
+    cascas --> content
+    cascas --> title
+    and --> codec
+```
+
+Como isso se lê na prática:
+
+1. A tela recebe **callback simples** (`onDeviceSelected`), nunca uma rota — ela
+   não conhece navegação.
+2. `RouteContent` traduz o callback em destino chamando a `NavigationPolicy`.
+3. A casca recebe a rota pronta e só decide **como** montar: `isNative` diz se é
+   uma tela da plataforma ou mais uma raiz Compose.
+
+| Pergunta | Resposta |
+| --- | --- |
+| Onde ponho uma tela Compose? | `features/<nome>/ui/` |
+| Onde ponho uma tela nativa? | na casca de cada plataforma |
+| Onde decido para onde ir? | `nav/NavigationPolicy.kt` — nunca na casca, nunca na tela |
+| Onde ligo rota a tela? | o `when` do `ui/RouteContent.kt` |
+| Onde ponho o título? | `nav/RouteTitle.kt` — as duas plataformas leem de lá |
+| Como a navegação sobrevive à morte de processo? | `RouteCodec` no extra do `Intent`; o sistema restaura a task e cada host relê sua rota |
+| Onde guardo o que atravessa telas? | no `AppGraph` (escopo de aplicação) — **não** na composição |
 
 ## Um caminho de ponta a ponta
 

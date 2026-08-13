@@ -56,7 +56,7 @@ não estão documentadas em nenhum outro lugar do repositório.
   estado e delega ações ao ViewModel. Condicional de negócio num composable
   é defeito de review, porque escapa do gate.
 - ViewModels são testados com `Dispatchers.setMain(StandardTestDispatcher())`
-  no `@BeforeTest` (+ `resetMain` no `@AfterTest`) — ver `WelcomeViewModelTest`.
+  no `@BeforeTest` (+ `resetMain` no `@AfterTest`) — ver `DeviceListViewModelTest`.
 
 ## Arquitetura (regras de dependência)
 
@@ -101,6 +101,6 @@ não estão documentadas em nenhum outro lugar do repositório.
   `feat/APP-123-netconfig-ble`, `fix/APP-456-token-refresh`.
   Tipos: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`.
 - Commits: **Conventional Commits** — `tipo(escopo): descrição no imperativo`.
-  Ex.: `feat(welcome): adiciona estado de loading na tela inicial`.
+  Ex.: `feat(devices): adiciona estado de loading na lista`.
   O corpo explica o *porquê* quando não for óbvio; o diff já mostra o *o quê*.
 - PR pequeno e focado; descrição aponta RFC/ADR quando a mudança decorre de um.

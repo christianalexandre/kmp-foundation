@@ -5,8 +5,8 @@
 | Módulo | Plugin Android | Papel |
 | --- | --- | --- |
 | `composeApp` | `com.android.kotlin.multiplatform.library` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
-| `androidApp` | `com.android.application` | Casca Android: `Application` (dona do composition root), `MainActivity`, engines nativas em Kotlin e manifesto. Sem lógica de negócio. |
-| `iosApp` | — (XcodeGen) | Casca iOS: `iOSApp` (dona do composition root) + engines nativas em Swift + a view que hospeda o `MainViewController`. |
+| `androidApp` | `com.android.application` | Casca Android: `Application` (dona do composition root), `HostActivity` (host de um destino Compose), as telas nativas, engines nativas em Kotlin e manifesto. Sem lógica de negócio. |
+| `iosApp` | — (XcodeGen) | Casca iOS: `iOSApp` (dona do composition root), `RootCoordinator` (dono da pilha), as telas nativas em SwiftUI e engines nativas em Swift. |
 
 A separação entre `composeApp` e `androidApp` **é exigência do AGP 9**: um
 módulo KMP não pode mais ser `com.android.application`, e o entry point Android
@@ -31,9 +31,16 @@ nativa vivem na **casca** — ver "Fronteira KMP ↔ nativo" abaixo.
 ## Organização: package-by-feature
 
 Dentro do `composeApp`, organização por **feature**, não por camada: `di/`
-(composition root), `core/` (transversal) e `features/<nome>/` com as camadas
-`domain`, `data`, `presentation`, `ui` e `di`. A estrutura desenhada e a tabela
-de "o que vai onde" estão no **SDD 03 — Mapa de código**.
+(composition root), `core/` (transversal), `nav/` (rotas e política), `ui/`
+(moldura + despacho de rota) e `features/<nome>/` com as camadas `domain`,
+`data`, `presentation`, `ui` e `di`. A estrutura desenhada e a tabela de "o que
+vai onde" estão no **SDD 03 — Mapa de código**.
+
+`nav/` e `ui/` ficam **fora de `core/`** pelo mesmo motivo que o `AppGraph`:
+`nav/` poderia morar em `core/` (só conhece ids), mas `ui/RouteContent` conhece
+features por definição — é ele que liga rota a tela — e `core/` não pode conhecer
+feature nenhuma. Manter os dois juntos no topo evita a pergunta recorrente de
+qual dos dois é qual.
 
 **Regras de dependência** (verificadas em review; enforcement automático é
 dívida registrada):
@@ -91,8 +98,8 @@ mesmo pacote `androidx.lifecycle` em `commonMain`) com `viewModelScope`:
 - No Android, sobrevive à recriação da Activity; com navegação, fica escopado
   ao destino (motivo de tê-lo adotado já na POC).
 - **Divisão de papéis com o DI manual**: o grafo da feature monta o objeto
-  (factory `WelcomeGraph.viewModel()`), a UI o registra no ciclo de vida com
-  `viewModel { graph.welcome.viewModel() }` — o grafo nunca guarda ViewModel.
+  (factory `DevicesGraph.listViewModel()`), a UI o registra no ciclo de vida com
+  `viewModel { graph.devices.listViewModel() }` — o grafo nunca guarda ViewModel.
 - **A carga inicial nasce no `init` do ViewModel**, não num `LaunchedEffect` da
   tela. O ViewModel sobrevive à recriação da Activity, a composição não:
   disparar pela tela refaz a busca a cada rotação. Pelo mesmo motivo, `load()`
@@ -100,13 +107,86 @@ mesmo pacote `androidx.lifecycle` em `commonMain`) com `viewModelScope`:
 - A tela coleta com **`collectAsStateWithLifecycle`**, não `collectAsState`:
   sem isso a coleta continua com o app em background.
 - Nos testes, `Dispatchers.setMain(StandardTestDispatcher())` substitui o Main
-  do `viewModelScope` (ver `WelcomeViewModelTest`); segue sem mocks, só Fakes.
+  do `viewModelScope` (ver `DeviceListViewModelTest`); segue sem mocks, só Fakes.
 
 ## Tratamento de erro
 
 `Outcome<T>` selado com `AppError` tipado, em `core/result/` — **ADR 0002**.
 Operação que pode falhar declara isso na assinatura; a tradução de erro para
 texto e ação acontece no ViewModel, nunca no composable.
+
+`Outcome` é para operação **única** (`DeviceRepository.device(id)`). Trabalho que
+emite eventos ao longo do caminho usa um `Flow` de tipo próprio
+(`DeviceRepository.discover()`), com a falha como mais um evento — embrulhar um
+fluxo em `Outcome` obrigaria a escolher entre falhar tudo e perder o parcial.
+
+O mesmo `AppError` vira textos **diferentes** em telas diferentes: `NotFound` na
+busca e `NotFound` nos ajustes pedem saídas distintas ao usuário. Por isso o mapa
+de erro→texto mora no ViewModel de cada tela, e não num utilitário comum.
+
+## Navegação: o container nativo é dono da pilha
+
+Decidido no **ADR 0007**, com a medição no **RFC 0001**. Sem biblioteca de
+navegação. O estado abaixo é o que existe hoje.
+
+**Não há pilha em Kotlin.** A pilha é a da plataforma — `UINavigationController`
+no iOS, pilha de Activities no Android — e cada destino Compose é uma **raiz
+Compose própria** (`ComposeUIViewController` / instância de `HostActivity`). Sem
+espelho em Kotlin, não há sincronização a manter nem laço a evitar.
+
+O motivo é o requisito que precede qualquer biblioteca: uma tela **inteiramente
+nativa** pode ser destino de topo, com telas Compose empilhadas por cima dela. A
+maioria das bibliotecas assume que todo destino é um composable, o que uma tela
+de SDK não é.
+
+| Peça | Onde | Papel |
+| --- | --- | --- |
+| `Route` | `nav/Route.kt` | Os destinos. Carregam **id, nunca objeto de domínio**. `isNative` diz quem desenha. |
+| `NavigationPolicy` | `nav/NavigationPolicy.kt` | **Quem decide o destino.** Funções puras, testadas em `commonTest`. |
+| `titleOf` | `nav/RouteTitle.kt` | O título de cada destino, em um lugar só, lido pelas duas plataformas. |
+| `RouteCodec` | `nav/RouteCodec.kt` | Serializa a rota para o extra do `Intent` — é o que faz a navegação sobreviver à morte de processo. |
+| `RouteContent` | `ui/RouteContent.kt` | Moldura (tema, insets, cabeçalho) + despacho rota → tela. **Nenhuma tela nasce aqui.** |
+| Cascas | `androidApp/`, `iosApp/Navigation/` | Sabem **como** apresentar. Nunca **o quê**. |
+
+`nav/` não conhece feature nenhuma — só ids atravessam. Quem liga rota a tela é
+`ui/`, que é o topo.
+
+### Cabeçalho e títulos
+
+A tela inicial **não tem cabeçalho**; as demais têm título e voltar — nas duas
+plataformas, com o mesmo desenho. Quem sabe se um destino é raiz da pilha é a
+casca, que é dona dela: `RouteContent` recebe `onBack: (() -> Unit)?`, e `null`
+significa raiz.
+
+No iOS isso implica **nav bar do UIKit escondida sempre**. As duas alternativas
+foram descartadas por motivo concreto: escondê-la só na raiz faz a faixa da barra
+mostrar a tela de saída durante o push (bug corrigido em 83c34a7), e mantê-la com
+título vazio deixa chrome em branco na tela inicial. O custo assumido é que o
+voltar é desenhado por nós e o gesto de borda precisa ser reabilitado pelo
+`interactivePopGestureRecognizer.delegate` — o gesto continua sendo o do sistema.
+
+As telas **nativas** desenham o próprio cabeçalho (`View` no Android, SwiftUI no
+iOS) e leem o texto de `titleOf`. A costura aparece, e num app real apareceria
+igual: a tela é do SDK.
+
+### Estado entre telas
+
+Com uma raiz Compose por destino, **estado compartilhado não cabe na composição**
+— cada destino tem a sua, isolada. Quem guarda o que atravessa telas é o escopo
+de aplicação: o `AppGraph` e o que ele segura. `PlatformDeviceRepository` é o
+exemplo vivo — a tela de ajustes recebe só um id e alcança o dispositivo que a
+busca encontrou, mesmo depois de passar por uma tela nativa.
+
+### Proibido (ADR 0007)
+
+- Casca decidir destino, ou decidir para onde ir quando uma tela nativa fecha.
+- Resultado de tela nativa voltando como payload de callback — o nativo escreve
+  no repositório compartilhado e o Compose observa.
+- Rota carregando objeto de domínio em vez de id.
+- Aplicar o padrão de engine (`Cancellable`/`CallHandle`) a abertura de tela.
+
+Em aberto e registrado: o mecanismo no Android (dívida #11), a biblioteca de
+navegação, e a entrada por deeplink/push (dívida #12).
 
 ## Fronteira KMP ↔ nativo
 
@@ -121,14 +201,15 @@ Quando o iOS precisa implementar um contrato Kotlin, a interface em `commonMain`
 bem à exportação para o header Objective-C. Que `suspend` esteja fora não é
 estilo: o Swift **não consegue implementar** uma função `suspend` do Kotlin.
 
-O caso **síncrono** (`core/platform/GreetingEngine.kt`) é só isto:
+O caso **síncrono** é só isto — uma pergunta ao SDK que responde na hora:
 
 ```kotlin
-interface GreetingEngine {
-    val isAvailable: Boolean
-    fun greeting(name: String): String
-}
+val isAvailable: Boolean
 ```
+
+O template **não tem uma engine dedicada a esse caso**: o exemplo dele é o
+`isAvailable` do `DeviceScanner`, que é exatamente isso e nada mais. Uma engine
+só-síncrona seria a mesma interface sem o `startScan`.
 
 O caso **assíncrono** (`core/platform/DeviceScanner.kt`) acrescenta callback e
 handle de cancelamento:
@@ -184,13 +265,13 @@ São **dois, e a escolha é objetiva**:
 | Situação | Mecanismo |
 | --- | --- |
 | Dado de plataforma que o Kotlin/Native alcança (versão do SO, locale) | `expect/actual` — `core/platform/Platform.kt` |
-| Só o SDK/Swift alcança, mas responde na hora | Interface síncrona — `GreetingEngine` |
+| Só o SDK/Swift alcança, mas responde na hora | Interface síncrona — `DeviceScanner.isAvailable` |
 | Trabalho assíncrono de um SDK nativo, com cancelamento | Interface + callback + `Cancellable` — `DeviceScanner` |
 
 A engine devolve **só o que é específico da plataforma**; texto de produto e
-composição ficam em `commonMain` (ver `PlatformMessageRepository`, que junta a
-saudação da engine com o `platformName()`). Se cada engine montasse a string
-final, a mesma decisão de produto existiria duas vezes — uma em Kotlin, outra em
+composição ficam em `commonMain` (ver `PlatformDeviceRepository`, que converte o
+`DiscoveredDevice` da fronteira no `Device` do domínio). Se cada engine montasse
+o modelo final, a mesma decisão existiria duas vezes — uma em Kotlin, outra em
 Swift — e divergiria na primeira alteração.
 
 ### Ilhas nativas

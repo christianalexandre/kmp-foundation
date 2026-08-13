@@ -13,7 +13,8 @@ arquitetura por feature já configurados.
 | Quality gates | Kover (cobertura ≥ 80%) + Detekt/ktlint (código **e** convention plugins) em `./gradlew check`; SwiftLint no código Swift |
 | Build | AGP 9 + Gradle 9.5, Version Catalog (`gradle/libs.versions.toml`) e convention plugins em `build-logic/` |
 | Arquitetura | Package-by-feature (`core/` + `features/<nome>/{domain,data,presentation,ui}`), MVVM sem use case, DI manual + ViewModel multiplataforma. Mapa em `docs/sdd/03_mapa_de_codigo.md` |
-| Exemplos | `features/welcome/` (fronteira síncrona) e `features/devices/` (assíncrona com cancelamento real), ambos com testes usando Fakes |
+| Navegação | Sem biblioteca: o container nativo é dono da pilha, uma raiz Compose por destino (ADR 0007). Rotas e política em `nav/`, testadas em `commonTest` |
+| Exemplos | `features/devices/` cobre os três casos, sem repetição: navegação Compose → Compose, Compose → tela 100% nativa → Compose por cima dela, e chamada assíncrona à casca nativa com cancelamento real. Testes com Fakes |
 
 ## Pré-requisitos
 
@@ -32,8 +33,8 @@ arquitetura por feature já configurados.
 | Módulo | Papel |
 | --- | --- |
 | `composeApp` | Lógica e UI compartilhadas (KMP): Android library + framework iOS. É onde vivem os gates. |
-| `androidApp` | Casca Android: `Application`, `MainActivity` e engines nativas em Kotlin. Sem lógica de negócio — o AGP 9 exige que o app seja um módulo separado do módulo KMP. |
-| `iosApp` | Casca iOS: SwiftUI + XcodeGen e engines nativas em Swift. |
+| `androidApp` | Casca Android: `Application`, `HostActivity` (host de um destino Compose), as telas nativas e as engines nativas em Kotlin. Sem lógica de negócio — o AGP 9 exige que o app seja um módulo separado do módulo KMP. |
+| `iosApp` | Casca iOS: SwiftUI + XcodeGen, o `RootCoordinator` (dono da pilha), as telas nativas e as engines nativas em Swift. |
 
 > `androidMain` é par de `iosMain` (source sets do módulo compartilhado), **não**
 > de `iosApp`. O mapa completo de onde cada coisa fica está em
@@ -67,16 +68,19 @@ o gate inteiro localmente.
 ## Checklist de clonagem (transformar o template em app real)
 
 1. Clonar/copiar este repositório e trocar `rootProject.name` em `settings.gradle.kts`.
-2. Renomear o pacote `com.kmpfoundation` — código (`commonMain`/`iosMain`, o
-   `MainActivity` e a `KmpFoundationApplication` do `androidApp`, incluindo o
-   `android:name` no manifesto), o `namespace` de cada módulo, o `applicationId`
-   em `androidApp/build.gradle.kts` e os filtros de cobertura em
+2. Renomear o pacote `com.kmpfoundation` — código (`commonMain`/`iosMain`, a
+   `HostActivity` e a `KmpFoundationApplication` do `androidApp`, incluindo o
+   `android:name` e os `activity` no manifesto), o `namespace` de cada módulo, o
+   `applicationId` em `androidApp/build.gradle.kts` e os filtros de cobertura em
    `build-logic/.../Quality.kt`.
 3. Atualizar `iosApp/project.yml` (`bundleIdPrefix`, `PRODUCT_BUNDLE_IDENTIFIER`,
    `CFBundleDisplayName`) e rodar `xcodegen`.
-4. **Deletar `features/welcome/` e `features/devices/`** (e seus testes), mais
-   as engines de exemplo em `androidApp/platform/` e `iosApp/` — são só
-   demonstração dos três níveis da fronteira nativa (SDD 03).
+4. **Deletar `features/devices/`** (e seus testes), as telas nativas de exemplo
+   (`DeviceDetailActivity` + a entrada dela no manifesto, `DeviceDetailView`) e
+   as engines em `androidApp/platform/` e `iosApp/` — são demonstração da
+   fronteira nativa (SDD 03) e da navegação (ADR 0007). **O que fica** é o
+   `nav/` e o `ui/RouteContent.kt`: apague as rotas de exemplo, deixe a rota
+   inicial da sua primeira tela e siga.
 5. Revisar `docs/sdd/` para refletir o produto real; iniciar ADRs a partir do 0001.
 6. Manter o gate de 80%: lógica nova nasce em `presentation/`/`domain`/`data` com teste.
 
@@ -92,6 +96,12 @@ o gate inteiro localmente.
   nunca por uma Activity ou tela — ver ADR 0003.
 - Engine nativa devolve um `Cancellable` **por chamada** e não guarda estado de
   chamada — ver ADR 0004.
+- **Toda tela Compose mora em `features/<nome>/ui/`.** `ui/RouteContent.kt` só
+  faz moldura e despacho rota → tela; nenhuma tela nasce dentro dele.
+- **A casca nunca decide destino** — quem decide é `nav/NavigationPolicy`, que é
+  função pura e testada em `commonTest`. Ver ADR 0007.
+- Estado que precisa atravessar telas vive no `AppGraph`, **não** na composição:
+  com uma raiz Compose por destino, cada tela tem composição própria.
 
 Detalhes em `docs/guidelines/01_style_guide.md` e `docs/sdd/02_arquitetura.md`.
 Para "onde ponho este arquivo?", `docs/sdd/03_mapa_de_codigo.md`.
