@@ -11,7 +11,10 @@ struct iOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(graph: graph)
+            // RAIZ TROCADA PELA BANCADA DO RFC 0001 enquanto o spike está em
+            // validação — qualquer run (Xcode, Android Studio, make ios-run) cai
+            // aqui. Para voltar ao app: trocar por `ContentView(graph: graph)`.
+            SpikeRootView()
         }
     }
 }
