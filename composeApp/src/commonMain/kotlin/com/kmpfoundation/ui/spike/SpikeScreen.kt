@@ -17,6 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlin.random.Random
 
 /**
  * Tela do spike do RFC 0001 — **não é tela de produto**. Existe para medir o custo
@@ -40,6 +43,7 @@ fun SpikeScreen(
     onPushNative: () -> Unit,
 ) {
     val reporter = remember { FirstDrawReporter() }
+    val probe = viewModel { SpikeProbeViewModel() }
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -72,6 +76,11 @@ fun SpikeScreen(
                 ) {
                     Text("Empilhar NATIVO ${depth + 1}")
                 }
+                Text(
+                    text = "ViewModel deste destino: #${probe.id}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = HEADER_PADDING),
+                )
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(rowsFor(depth)) { row ->
                         SpikeRow(row)
@@ -102,6 +111,22 @@ private fun rowsFor(depth: Int): List<SpikeRow> = List(ROWS_PER_SCREEN) { index 
         title = "Ajuste ${index + 1} do destino $depth",
         subtitle = "Descrição de apoio para dar ao texto um volume realista de layout",
     )
+}
+
+/**
+ * Sonda do escopo de ViewModel — a pergunta que decide se dá para navegar sem
+ * biblioteca: **cada raiz Compose tem seu próprio `ViewModelStoreOwner`?**
+ *
+ * Se tiver, cada destino ganha do sistema o que uma biblioteca de navegação
+ * venderia (instância retida por tela), e a camada compartilhada de ciclo de vida
+ * deixa de ser necessária. Se não tiver, todos os destinos compartilham um store
+ * só — e aí o escopo por tela vira trabalho nosso.
+ *
+ * O [id] é sorteado na construção: dois destinos com o mesmo id significam store
+ * compartilhado; ids diferentes significam escopo por raiz.
+ */
+class SpikeProbeViewModel : ViewModel() {
+    val id: Int = Random.nextInt(from = 1000, until = 9999)
 }
 
 /**
