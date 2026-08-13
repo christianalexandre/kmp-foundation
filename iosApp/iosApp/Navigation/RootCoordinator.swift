@@ -76,6 +76,10 @@ final class RootCoordinator: NSObject, UINavigationControllerDelegate {
         }
 
         controller.title = title(for: route)
+        // Sem isto o conteúdo se estende por baixo da nav bar e ela cobre o topo da
+        // tela. A nav bar precisa estar em cena — é ela que dá o botão de voltar e a
+        // transição de push — então quem cede é o conteúdo.
+        controller.edgesForExtendedLayout = []
         return controller
     }
 
