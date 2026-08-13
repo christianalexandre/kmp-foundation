@@ -129,3 +129,40 @@ adiado e o gatilho para pagar.
   parte porque a engine é fina por contrato (ADR 0004: sem estado de chamada).
 - **Gatilho:** primeira engine real no clone (Imou/Tuya). Aí a implementação
   deixa de ser trivial e o teste passa a valer mais que o custo do setup.
+
+## 10. Três números que o ADR 0007 assumiu sem medir
+
+O ADR 0007 foi decidido com os dois critérios bloqueantes medidos (1º frame e
+swipe-back). Ficaram três lacunas, todas conscientes:
+
+- **Custo de memória por raiz Compose.** O instrumento falhou três vezes — delta
+  por push, acumulado desde o baseline e série assentada. `totalPss` e
+  `phys_footprint` amostrados pelo próprio app não isolam custo de raiz nessa
+  escala: a memória chegou a **cair** enquanto a pilha crescia. Medir direito exige
+  Instruments/Allocations no iOS e Memory Profiler no Android — sessão própria, não
+  um HUD. **Aceito** porque empilhar dezenas de destinos num iPhone 8 de 2 GB não
+  causou jetsam, que é o aparelho e a condição em que ele agiria.
+  **Gatilho:** primeira tela de SDK real (player, preview) no clone — aí o conteúdo
+  passa a dominar o custo e o número muda de natureza.
+- **Frame rate do pop interativo, em número.** Foi validado no uso, no iPhone 8,
+  não com instrumento. A bancada mede, mas a sessão não colheu.
+  **Gatilho:** qualquer relato de engasgo no gesto, ou a primeira tela pesada.
+- **Gesto de voltar no Android.** O aparelho disponível (Galaxy S10+) é API 31, e o
+  back preditivo exige API 33+ — animação entre Activities, API 34+. A bancada
+  reporta "sem amostras" em vez de fingir um número. É a lacuna menos grave: o
+  argumento de fidelidade de transição sempre foi do iOS.
+  **Gatilho:** aparelho API 34+ disponível, ou a decisão do mecanismo Android
+  (Activity por destino contra raiz única) precisar do dado.
+
+## 11. O mecanismo de navegação no Android ficou em aberto
+
+- **O quê:** o ADR 0007 fixou a posse da pilha e o contrato, mas **não** decidiu se
+  o Android usa Activity por destino ou raiz única com Compose desenhando o topo.
+- **Por quê adiado:** a motivação do container nativo é fidelidade de transição e
+  swipe-back, argumento **inteiramente iOS**. No Android não existe transição de
+  push cuja qualidade se perca ao desenhar em Compose. E a escolha depende da
+  biblioteca, que também não foi decidida.
+- **Consequência aceita:** as duas plataformas podem divergir no mecanismo mantendo
+  o mesmo contrato — assimetria deliberada, não acidente. É o que já acontece hoje
+  na bancada e no `imou-smart-home`.
+- **Gatilho:** o RFC da biblioteca de navegação. Decidir os dois juntos.
