@@ -51,12 +51,3 @@ schemes:
         iosApp: all
     run:
       config: Debug
-  # Medição da bancada do RFC 0001 em DEVICE. Existe como scheme próprio porque em
-  # Debug o Kotlin/Native é ordens de grandeza mais lento — medir assim produz um
-  # número enganoso, com aparência de confiável. Sai junto com o spike.
-  iosAppRelease:
-    build:
-      targets:
-        iosApp: all
-    run:
-      config: Release

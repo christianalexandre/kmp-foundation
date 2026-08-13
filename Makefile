@@ -62,11 +62,11 @@ ios-run: ios ## Build, install and launch the app on the simulator
 		$(DERIVED_DATA)/Build/Products/Debug-iphonesimulator/iosApp.app; \
 	xcrun simctl launch $$udid $(BUNDLE_ID)
 
-android-release: ## Install and launch the RELEASE build (required to measure — RFC 0001)
+android-release: ## Install and launch the RELEASE build (perf só faz sentido em Release)
 	./gradlew :androidApp:installRelease
 	adb shell monkey -p com.kmpfoundation -c android.intent.category.LAUNCHER 1
 
-ios-release: gen ## Build+launch the iOS RELEASE build on the simulator (device: scheme iosAppRelease)
+ios-release: gen ## Build+launch the iOS RELEASE build on the simulator
 	@# A primeira build Release do Kotlin/Native demora vários minutos (linkRelease).
 	cd iosApp && xcodebuild -project iosApp.xcodeproj -scheme iosApp \
 		-configuration Release -destination '$(SIM_DEST)' \
