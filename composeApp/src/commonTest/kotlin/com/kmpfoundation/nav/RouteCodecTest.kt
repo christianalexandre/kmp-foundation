@@ -14,7 +14,6 @@ class RouteCodecTest {
     @Test
     fun routesSurviveARoundTrip() {
         val routes = listOf(
-            Route.Welcome,
             Route.Devices,
             Route.DeviceDetail("cam-1"),
             Route.DeviceSettings("cam-1"),

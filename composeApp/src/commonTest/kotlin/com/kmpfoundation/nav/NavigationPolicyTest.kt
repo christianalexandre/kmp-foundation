@@ -2,7 +2,6 @@ package com.kmpfoundation.nav
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -10,6 +9,14 @@ import kotlin.test.assertTrue
  * estes testes passam, a decisão está no comum e não duplicada nas duas cascas.
  */
 class NavigationPolicyTest {
+
+    @Test
+    fun theAppStartsOnAComposeScreen() {
+        // Se a rota inicial virar nativa sem querer, o app abre sem cabeçalho E sem
+        // o Compose que o desenha — sintoma difícil de ligar à causa.
+        assertEquals(Route.Devices, NavigationPolicy.start)
+        assertTrue(!NavigationPolicy.start.isNative)
+    }
 
     @Test
     fun selectingADeviceGoesToANativeDestination() {
@@ -27,26 +34,5 @@ class NavigationPolicyTest {
 
         assertEquals(Route.DeviceSettings("cam-1"), route)
         assertTrue(!route.isNative)
-    }
-
-    @Test
-    fun deeplinkToADeviceKeepsTheListUnderneath() {
-        val routes = NavigationPolicy.fromDeeplink("kmpfoundation://device/cam-7")
-
-        // Duas rotas, não uma: abrir o device direto da notificação sem a lista
-        // embaixo faria o voltar jogar o usuário para fora do app.
-        assertEquals(listOf(Route.Devices, Route.DeviceDetail("cam-7")), routes)
-    }
-
-    @Test
-    fun deeplinkToTheListIsASingleRoute() {
-        assertEquals(listOf(Route.Devices), NavigationPolicy.fromDeeplink("kmpfoundation://devices"))
-    }
-
-    @Test
-    fun unknownDeeplinkNavigatesNowhere() {
-        assertNull(NavigationPolicy.fromDeeplink("kmpfoundation://cameras/1/live"))
-        assertNull(NavigationPolicy.fromDeeplink("https://exemplo.com/device/1"))
-        assertNull(NavigationPolicy.fromDeeplink("kmpfoundation://"))
     }
 }

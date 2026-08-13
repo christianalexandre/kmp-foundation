@@ -2,6 +2,7 @@ package com.kmpfoundation.features.devices.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kmpfoundation.core.platform.platformName
 import com.kmpfoundation.core.result.AppError
 import com.kmpfoundation.features.devices.domain.Device
 import com.kmpfoundation.features.devices.domain.DeviceRepository
@@ -23,6 +24,13 @@ class DeviceListViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(DeviceListUiState())
     val state: StateFlow<DeviceListUiState> = _state.asStateFlow()
+
+    /**
+     * Nível 1 da fronteira nativa — `expect/actual`, sem interface nem callback,
+     * porque o Kotlin/Native alcança a API sozinho (SDD 03). Fica fora do
+     * `state` de propósito: não muda, e `state` é para o que muda.
+     */
+    val platform: String = platformName()
 
     private var scanJob: Job? = null
 

@@ -6,9 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.ui.Modifier
 import com.kmpfoundation.nav.NavigationPolicy
 import com.kmpfoundation.nav.Route
 import com.kmpfoundation.nav.RouteCodec
@@ -42,11 +39,15 @@ class HostActivity : ComponentActivity() {
             ?: NavigationPolicy.start
 
         setContent {
-            // Insets tratados na casca: o RouteContent é compartilhado com o iOS,
-            // onde quem inseta é o view controller.
-            Box(modifier = Modifier.safeDrawingPadding()) {
-                RouteContent(route = route, graph = graph, onNavigate = ::navigate)
-            }
+            RouteContent(
+                route = route,
+                graph = graph,
+                onNavigate = ::navigate,
+                // A raiz da task não tem para onde voltar — e, por decisão de
+                // produto, é a única tela sem cabeçalho. Quem sabe se é raiz é a
+                // casca, porque a pilha é dela (ADR 0007).
+                onBack = if (isTaskRoot) null else ::finish,
+            )
         }
     }
 

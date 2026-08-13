@@ -114,10 +114,13 @@ adiado e o gatilho para pagar.
 
 ## 9. As implementações de engine nativa estão fora de qualquer gate
 
-- **O quê:** `AndroidGreetingEngine` (Kotlin, em `androidApp/`) e
-  `SwiftGreetingEngine` (Swift, em `iosApp/`) não têm teste. O contrato e o
-  adapter são cobertos em `commonTest` pelo `FakeGreetingEngine`, mas as duas
+- **O quê:** `AndroidDeviceScanner` (Kotlin, em `androidApp/`) e
+  `SwiftDeviceScanner` (Swift, em `iosApp/`) não têm teste. O contrato e o
+  adapter são cobertos em `commonTest` pelo `FakeDeviceScanner`, mas as duas
   implementações reais, não.
+- **Piorou em 2026-08-13** ao remover a `features/welcome`: as engines de
+  saudação saíram junto, e com elas o exemplo síncrono. Sobrou só o scanner, que
+  é o caso **mais** difícil de testar dos dois — tem timer e cancelamento.
 - **Piorou em 2026-08-12** ao mover a engine Android para a casca (SDD 03): a
   decisão de arquitetura está certa, mas o efeito colateral é que as duas
   implementações passaram a viver em módulos **sem medição de cobertura**. O
@@ -166,3 +169,24 @@ swipe-back). Ficaram três lacunas, todas conscientes:
   o mesmo contrato — assimetria deliberada, não acidente. É o que já acontece hoje
   na bancada e no `imou-smart-home`.
 - **Gatilho:** o RFC da biblioteca de navegação. Decidir os dois juntos.
+
+## 12. Deeplink e push não têm caminho de entrada
+
+- **O quê:** o ADR 0007 exige que a rota seja reconstruível a partir de um
+  deeplink ou de um push, e é por isso que ela carrega **id, nunca objeto**. Hoje
+  o único caminho de entrada exercitado é o `Intent` restaurado depois de morte
+  de processo (`RouteCodec`) — não há esquema de URL registrado no `Info.plist`
+  nem `intent-filter` no manifesto.
+- **O que saiu, e por quê (2026-08-13):** existia uma `NavigationPolicy.fromDeeplink`
+  testada e um `RootCoordinator.open(deeplink:)` que **ninguém chamava**, e o
+  Android não tinha nada. Num repositório cujo valor é ser lido e entendido,
+  código inalcançável ensina errado: dá a impressão de que o caminho existe.
+  Preferimos a ausência declarada à presença falsa.
+- **O que continua de pé:** a decisão que motivava tudo isso — rota carrega id, e
+  a política decide o destino — está exercitada pelos outros caminhos e testada
+  em `commonTest`. Reintroduzir o deeplink é escrever a política de volta e ligar
+  duas pontas na casca, não redesenhar nada.
+- **Cuidado ao reintroduzir:** deeplink vira **pilha**, não tela solta. Abrir um
+  device direto da notificação sem a lista embaixo faz o voltar jogar o usuário
+  para fora do app — no iOS é `setViewControllers`, no Android `startActivities`.
+- **Gatilho:** primeiro deeplink ou push real no clone.

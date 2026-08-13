@@ -15,12 +15,15 @@ import platform.UIKit.UIViewController
  * sistema — é o que dispensa uma biblioteca de navegação aqui.
  *
  * PascalCase porque o Swift consome isto como se fosse um construtor.
+ *
+ * @param onBack `null` no destino que é raiz da pilha — ver `RouteContent`.
  */
 @Suppress("FunctionNaming", "ktlint:standard:function-naming")
 fun RouteViewController(
     route: Route,
     graph: AppGraph,
     onNavigate: (Route) -> Unit,
+    onBack: (() -> Unit)?,
 ): UIViewController = ComposeUIViewController {
-    RouteContent(route = route, graph = graph, onNavigate = onNavigate)
+    RouteContent(route = route, graph = graph, onNavigate = onNavigate, onBack = onBack)
 }

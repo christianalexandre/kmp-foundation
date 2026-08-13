@@ -20,7 +20,11 @@ struct ContentView: View {
     let graph: AppGraph
 
     var body: some View {
+        // De borda a borda de propósito: com a nav bar escondida, quem cede espaço
+        // para as barras do sistema é o conteúdo de cada destino — o Compose por
+        // `safeDrawingPadding`, o SwiftUI pela safe area dele. Insetar aqui
+        // insetaria duas vezes.
         RootView(graph: graph)
-            .ignoresSafeArea(.keyboard)
+            .ignoresSafeArea()
     }
 }

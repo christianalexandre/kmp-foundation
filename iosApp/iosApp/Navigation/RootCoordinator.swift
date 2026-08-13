@@ -13,10 +13,22 @@ import UIKit
 /// `NavigationPolicy` e sabe apenas como apresentá-la. Não existe pilha em Kotlin
 /// espelhando esta — sem espelho, não há sincronização a manter nem laço a evitar.
 ///
-/// A nav bar fica **sempre visível**, inclusive na raiz. Escondê-la só na raiz
-/// parece inofensivo e não é: ao empilhar, a barra anima para dentro enquanto o
-/// conteúdo novo já começa abaixo dela, e a faixa da barra mostra a tela de saída
-/// por alguns frames.
+/// ## A nav bar fica escondida SEMPRE
+///
+/// Decisão de produto: a tela inicial não tem cabeçalho, e as demais têm — nas
+/// duas plataformas, com o mesmo desenho. Isso descarta as duas formas de usar a
+/// barra do UIKit:
+///
+/// - **Esconder só na raiz** é um bug já pago: ao empilhar, a barra anima para
+///   dentro enquanto o conteúdo novo já começa abaixo dela, e a faixa da barra
+///   mostra a tela de saída por alguns frames.
+/// - **Sempre visível com título vazio na raiz** deixa uma faixa em branco no topo
+///   da tela inicial, que é chrome visível.
+///
+/// Então o cabeçalho é desenhado em Compose (`ui/RouteContent.kt`) e em SwiftUI
+/// nos destinos nativos, com o texto vindo de `titleOf` — um lugar só, comum às
+/// duas plataformas. O preço é este arquivo: sem a barra, o UIKit desliga o gesto
+/// de voltar, e ele precisa ser reabilitado à mão pelo delegate abaixo.
 final class RootCoordinator: NSObject {
 
     private let graph: AppGraph
@@ -27,26 +39,25 @@ final class RootCoordinator: NSObject {
     }
 
     func makeNavigationController() -> UINavigationController {
-        let root = controller(for: NavigationPolicy.shared.start)
+        let root = controller(for: NavigationPolicy.shared.start, canGoBack: false)
         let nav = UINavigationController(rootViewController: root)
+        nav.setNavigationBarHidden(true, animated: false)
+        // Sem a barra, o UIKit desabilita o swipe-back. Assumir o delegate o traz de
+        // volta — é o gesto do sistema, não uma imitação, que é o motivo do ADR 0007.
+        nav.interactivePopGestureRecognizer?.delegate = self
         navigationController = nav
         return nav
-    }
-
-    /// Entrada de deeplink: empilha a **pilha inteira** que a política devolveu,
-    /// não só a última tela — senão o voltar joga o usuário para fora do app.
-    func open(deeplink: String) {
-        guard let nav = navigationController,
-              let routes = NavigationPolicy.shared.fromDeeplink(uri: deeplink) else { return }
-
-        let controllers = routes.map { controller(for: $0) }
-        nav.setViewControllers(controllers, animated: true)
     }
 
     // MARK: - Apresentação
 
     private func navigate(to route: Route) {
-        navigationController?.pushViewController(controller(for: route), animated: true)
+        let next = controller(for: route, canGoBack: true)
+        navigationController?.pushViewController(next, animated: true)
+    }
+
+    private func pop() {
+        navigationController?.popViewController(animated: true)
     }
 
     /// O único ponto do app que sabe **como** cada tipo de destino é montado.
@@ -55,46 +66,44 @@ final class RootCoordinator: NSObject {
     /// `sealed interface` do Kotlin vira **protocolo** em Objective-C, e protocolo
     /// não tem tipo aninhado. É a mesma restrição de exportação que o SDD 02 já
     /// registra para os contratos de engine.
-    private func controller(for route: Route) -> UIViewController {
-        let controller: UIViewController
+    ///
+    /// `canGoBack` é `false` só para a raiz da pilha, e é o que decide se existe
+    /// cabeçalho. Quem sabe disso é esta casca, porque a pilha é dela.
+    private func controller(for route: Route, canGoBack: Bool) -> UIViewController {
+        let onBack: (() -> Void)? = canGoBack ? { [weak self] in self?.pop() } : nil
 
         if let detail = route as? RouteDeviceDetail {
             // Destino nativo: SwiftUI puro, sem Compose. É onde uma tela de SDK
             // entraria no app real.
-            controller = UIHostingController(
+            return UIHostingController(
                 rootView: DeviceDetailView(
                     deviceId: detail.deviceId,
+                    title: RouteTitleKt.titleOf(route: route),
                     onOpenSettings: { [weak self] in
                         self?.navigate(to: NavigationPolicy.shared.onDeviceSettings(deviceId: detail.deviceId))
-                    }
+                    },
+                    onBack: onBack
                 )
             )
-        } else {
-            controller = RouteViewControllerKt.RouteViewController(
-                route: route,
-                graph: graph,
-                onNavigate: { [weak self] next in
-                    self?.navigate(to: next)
-                }
-            )
         }
 
-        controller.title = title(for: route)
-        // Sem isto o conteúdo se estende por baixo da nav bar e ela cobre o topo da
-        // tela. A nav bar precisa estar em cena — é ela que dá o botão de voltar e a
-        // transição de push — então quem cede é o conteúdo.
-        controller.edgesForExtendedLayout = []
-        return controller
+        return RouteViewControllerKt.RouteViewController(
+            route: route,
+            graph: graph,
+            onNavigate: { [weak self] next in
+                self?.navigate(to: next)
+            },
+            onBack: onBack
+        )
     }
 
-    private func title(for route: Route) -> String {
-        switch route {
-        case is RouteWelcome: return "Início"
-        case is RouteDevices: return "Dispositivos"
-        case let detail as RouteDeviceDetail: return detail.deviceId
-        case is RouteDeviceSettings: return "Ajustes"
-        default: return ""
-        }
-    }
+}
 
+extension RootCoordinator: UIGestureRecognizerDelegate {
+
+    /// Sem isto o gesto dispararia também na raiz, onde não há para onde voltar —
+    /// o UIKit trava a navegação quando isso acontece.
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        (navigationController?.viewControllers.count ?? 0) > 1
+    }
 }
