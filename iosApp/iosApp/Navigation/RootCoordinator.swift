@@ -12,7 +12,12 @@ import UIKit
 /// **Esta casca não decide destino.** Ela recebe uma `Route` já escolhida pela
 /// `NavigationPolicy` e sabe apenas como apresentá-la. Não existe pilha em Kotlin
 /// espelhando esta — sem espelho, não há sincronização a manter nem laço a evitar.
-final class RootCoordinator: NSObject, UINavigationControllerDelegate {
+///
+/// A nav bar fica **sempre visível**, inclusive na raiz. Escondê-la só na raiz
+/// parece inofensivo e não é: ao empilhar, a barra anima para dentro enquanto o
+/// conteúdo novo já começa abaixo dela, e a faixa da barra mostra a tela de saída
+/// por alguns frames.
+final class RootCoordinator: NSObject {
 
     private let graph: AppGraph
     private weak var navigationController: UINavigationController?
@@ -24,7 +29,6 @@ final class RootCoordinator: NSObject, UINavigationControllerDelegate {
     func makeNavigationController() -> UINavigationController {
         let root = controller(for: NavigationPolicy.shared.start)
         let nav = UINavigationController(rootViewController: root)
-        nav.delegate = self
         navigationController = nav
         return nav
     }
@@ -93,16 +97,4 @@ final class RootCoordinator: NSObject, UINavigationControllerDelegate {
         }
     }
 
-    // MARK: - UINavigationControllerDelegate
-
-    func navigationController(
-        _ navigationController: UINavigationController,
-        willShow viewController: UIViewController,
-        animated: Bool
-    ) {
-        // A raiz desenha o próprio cabeçalho; as telas empilhadas usam a nav bar
-        // real, que é quem dá o botão de voltar e o crossfade do título.
-        let isRoot = viewController === navigationController.viewControllers.first
-        navigationController.setNavigationBarHidden(isRoot, animated: animated)
-    }
 }
