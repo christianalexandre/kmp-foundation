@@ -1,19 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:name=".KmpFoundationApplication"
         android:label="kmp-foundation"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        tools:targetApi="tiramisu"
+        android:enableOnBackInvokedCallback="true">
+
+        <!--
+            LAUNCHER APONTADO PARA A BANCADA DO RFC 0001 enquanto o spike está em
+            validação — par da troca de raiz no iOSApp.swift. Para voltar ao app,
+            mover o intent-filter de volta para .MainActivity.
+
+            android:enableOnBackInvokedCallback habilita o back PREDITIVO, que é a
+            janela de amostragem do pior caso (duas Activities desenhando durante o
+            gesto). Sem ele não há gesto progressivo para medir.
+        -->
         <activity
-            android:name=".MainActivity"
+            android:name=".spike.SpikeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Destino 100% nativo da bancada: UI de View, sem Compose. -->
+        <activity
+            android:name=".spike.SpikeNativeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
