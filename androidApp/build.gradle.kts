@@ -14,6 +14,23 @@ android {
         versionName = "0.1.0"
     }
 
+    buildTypes {
+        release {
+            // Existe para a bancada do RFC 0001 poder ser medida: em Debug o app é
+            // `debuggable`, o que desliga otimizações da ART, e o número de 1º frame
+            // sai enganoso — com aparência de confiável. Medição exige Release.
+            //
+            // Assinado com a chave de DEBUG de propósito: isto habilita medir em
+            // device, não distribuir. Assinatura de verdade é assunto da dívida #7
+            // (ambientes de build e segredos), ainda adiada.
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
+    }
 }
 
 dependencies {

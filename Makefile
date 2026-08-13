@@ -5,7 +5,7 @@ SIM_DEST ?= platform=iOS Simulator,name=$(SIMULATOR)
 BUNDLE_ID := com.kmpfoundation.iosApp
 DERIVED_DATA := build/ios-derived-data
 
-.PHONY: bootstrap gen open-ios check test lint format coverage android android-run ios ios-run clean help
+.PHONY: bootstrap gen open-ios check test lint format coverage android android-run android-release ios ios-run ios-release clean help
 
 bootstrap: ## Install tools, wire git hooks, generate the Xcode project
 	brew bundle
@@ -60,6 +60,25 @@ ios-run: ios ## Build, install and launch the app on the simulator
 	open -a Simulator; \
 	xcrun simctl install $$udid \
 		$(DERIVED_DATA)/Build/Products/Debug-iphonesimulator/iosApp.app; \
+	xcrun simctl launch $$udid $(BUNDLE_ID)
+
+android-release: ## Install and launch the RELEASE build (required to measure — RFC 0001)
+	./gradlew :androidApp:installRelease
+	adb shell monkey -p com.kmpfoundation -c android.intent.category.LAUNCHER 1
+
+ios-release: gen ## Build+launch the iOS RELEASE build on the simulator (device: scheme iosAppRelease)
+	@# A primeira build Release do Kotlin/Native demora vários minutos (linkRelease).
+	cd iosApp && xcodebuild -project iosApp.xcodeproj -scheme iosApp \
+		-configuration Release -destination '$(SIM_DEST)' \
+		-derivedDataPath ../$(DERIVED_DATA) -quiet build
+	@set -e; \
+	udid=$$(xcrun simctl list devices available | grep -m1 '$(SIMULATOR) (' \
+		| grep -oE '[0-9A-Fa-f-]{36}'); \
+	test -n "$$udid" || { echo "simulador '$(SIMULATOR)' não encontrado"; exit 1; }; \
+	xcrun simctl boot $$udid 2>/dev/null || true; \
+	open -a Simulator; \
+	xcrun simctl install $$udid \
+		$(DERIVED_DATA)/Build/Products/Release-iphonesimulator/iosApp.app; \
 	xcrun simctl launch $$udid $(BUNDLE_ID)
 
 clean: ## Remove build artifacts and the generated Xcode project
